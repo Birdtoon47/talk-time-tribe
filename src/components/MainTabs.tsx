@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Home, Calendar, User, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,9 +11,10 @@ import { Button } from '@/components/ui/button';
 interface MainTabsProps {
   userData: any;
   onLogout: () => void;
+  onUpdateUserData: (updatedData: any) => void;
 }
 
-const MainTabs = ({ userData, onLogout }: MainTabsProps) => {
+const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
   const [activeTab, setActiveTab] = useState('feed');
   const [creators, setCreators] = useState<any[]>([]);
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
@@ -106,6 +106,9 @@ const MainTabs = ({ userData, onLogout }: MainTabsProps) => {
         return updatedCreators;
       });
     }
+    
+    // Pass the updated data back to the parent component
+    onUpdateUserData(updatedData);
   };
   
   return (
