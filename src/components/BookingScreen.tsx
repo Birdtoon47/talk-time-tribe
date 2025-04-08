@@ -27,6 +27,7 @@ const BookingScreen = ({ userData, creators, selectedCreator }: BookingScreenPro
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [consultationType, setConsultationType] = useState<'video' | 'audio' | 'chat'>('video');
+  const [activeTab, setActiveTab] = useState('date');
   
   const handleBookConsultation = () => {
     if (!selectedCreator || !selectedDate || !selectedTime || !selectedDuration) {
@@ -119,6 +120,14 @@ const BookingScreen = ({ userData, creators, selectedCreator }: BookingScreenPro
     return (selectedCreator.ratePerMinute / selectedCreator.minuteIncrement) * selectedDuration;
   };
   
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+  
+  const navigateToNextTab = (current: string, next: string) => {
+    setActiveTab(next);
+  };
+  
   return (
     <div className="p-4">
       <div className="flex items-center gap-3 mb-4">
@@ -137,7 +146,7 @@ const BookingScreen = ({ userData, creators, selectedCreator }: BookingScreenPro
         </div>
       </div>
       
-      <Tabs defaultValue="date" className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid grid-cols-4 mb-4">
           <TabsTrigger value="date">Date</TabsTrigger>
           <TabsTrigger value="time">Time</TabsTrigger>
@@ -182,11 +191,7 @@ const BookingScreen = ({ userData, creators, selectedCreator }: BookingScreenPro
           <Button 
             disabled={!selectedDate} 
             className="w-full bg-app-purple"
-            onClick={() => {
-              if (selectedDate) {
-                document.querySelector('button[value="time"]')?.click();
-              }
-            }}
+            onClick={() => navigateToNextTab('date', 'time')}
           >
             Continue
           </Button>
@@ -233,11 +238,7 @@ const BookingScreen = ({ userData, creators, selectedCreator }: BookingScreenPro
           <Button 
             disabled={!selectedTime || !selectedDuration} 
             className="w-full bg-app-purple"
-            onClick={() => {
-              if (selectedTime && selectedDuration) {
-                document.querySelector('button[value="type"]')?.click();
-              }
-            }}
+            onClick={() => navigateToNextTab('time', 'type')}
           >
             Continue
           </Button>
@@ -309,9 +310,7 @@ const BookingScreen = ({ userData, creators, selectedCreator }: BookingScreenPro
           
           <Button 
             className="w-full bg-app-purple"
-            onClick={() => {
-              document.querySelector('button[value="payment"]')?.click();
-            }}
+            onClick={() => navigateToNextTab('type', 'payment')}
           >
             Continue
           </Button>
