@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Sheet, 
@@ -15,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { 
   Settings, 
   CreditCard, 
-  Bank, 
+  Building, 
   LogOut,
   DollarSign,
   Globe
@@ -125,7 +124,7 @@ const SettingsModal = ({ userData, onLogout, onUpdateUserData }: SettingsModalPr
             <div className="space-y-4">
               <div className="border rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Bank className="h-5 w-5 text-app-purple" />
+                  <Building className="h-5 w-5 text-app-purple" />
                   <h4 className="font-medium">Bank Transfer</h4>
                 </div>
                 

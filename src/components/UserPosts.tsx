@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Share, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Share, Image as ImageIcon, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface UserPostsProps {
