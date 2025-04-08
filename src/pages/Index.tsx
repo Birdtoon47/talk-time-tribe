@@ -1,11 +1,48 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState, useEffect } from "react";
+import AuthScreen from "@/components/AuthScreen";
+import MainTabs from "@/components/MainTabs";
 
 const Index = () => {
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user is stored in localStorage
+    const storedUser = localStorage.getItem("talktribe_user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    setIsLoading(false);
+  }, []);
+
+  const handleAuthenticated = (userData: any) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse-slow">
+          <h1 className="text-3xl font-bold text-app-purple">TalkTimeTribe</h1>
+          <p className="text-center mt-2">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="h-screen overflow-hidden">
+      <div className="h-full mobile-container">
+        {user ? (
+          <MainTabs userData={user} onLogout={handleLogout} />
+        ) : (
+          <AuthScreen onAuthenticated={handleAuthenticated} />
+        )}
       </div>
     </div>
   );
