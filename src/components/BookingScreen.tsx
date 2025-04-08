@@ -37,8 +37,9 @@ interface Booking {
   creatorProfilePic: string;
 }
 
-const BookingScreen = ({ userData, creators = [], selectedCreator }: BookingScreenProps) => {
+const BookingScreen = ({ userData, creators = [], selectedCreator: initialSelectedCreator }: BookingScreenProps) => {
   const [availableCreators, setAvailableCreators] = useState(creators || []);
+  const [selectedCreator, setSelectedCreator] = useState(initialSelectedCreator);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
@@ -147,7 +148,7 @@ const BookingScreen = ({ userData, creators = [], selectedCreator }: BookingScre
   
   const handleCancelBooking = (bookingId: string) => {
     const updatedBookings = bookings.map(booking => 
-      booking.id === bookingId ? { ...booking, status: 'cancelled' } : booking
+      booking.id === bookingId ? { ...booking, status: 'cancelled' as 'scheduled' | 'completed' | 'cancelled' } : booking
     );
     
     localStorage.setItem('talktribe_bookings', JSON.stringify(updatedBookings));
@@ -157,7 +158,7 @@ const BookingScreen = ({ userData, creators = [], selectedCreator }: BookingScre
   
   const handleCompleteBooking = (bookingId: string) => {
     const updatedBookings = bookings.map(booking => 
-      booking.id === bookingId ? { ...booking, status: 'completed' } : booking
+      booking.id === bookingId ? { ...booking, status: 'completed' as 'scheduled' | 'completed' | 'cancelled' } : booking
     );
     
     localStorage.setItem('talktribe_bookings', JSON.stringify(updatedBookings));
