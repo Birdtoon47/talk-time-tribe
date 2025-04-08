@@ -1,10 +1,12 @@
 
 import { useState, useEffect } from 'react';
-import { Home, Calendar, User, MessageSquare, LogOut } from 'lucide-react';
+import { Home, Calendar, User, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import SocialFeed from './SocialFeed';
 import BookingScreen from './BookingScreen';
 import CreatorProfile from './CreatorProfile';
+import SearchBar from './SearchBar';
+import SettingsModal from './SettingsModal';
 import { Button } from '@/components/ui/button';
 
 interface MainTabsProps {
@@ -15,6 +17,8 @@ interface MainTabsProps {
 const MainTabs = ({ userData, onLogout }: MainTabsProps) => {
   const [activeTab, setActiveTab] = useState('feed');
   const [creators, setCreators] = useState<any[]>([]);
+  const [selectedCreator, setSelectedCreator] = useState<any>(null);
+  const [currentUserData, setCurrentUserData] = useState(userData);
   
   useEffect(() => {
     // Load mock creators data
@@ -57,9 +61,9 @@ const MainTabs = ({ userData, onLogout }: MainTabsProps) => {
         id: userData.id,
         name: userData.name,
         profilePic: userData.profilePic,
-        bio: 'Your personal bio goes here. Edit your profile to update it!',
-        ratePerMinute: 5000,
-        minuteIncrement: 5,
+        bio: userData.bio || 'Your personal bio goes here. Edit your profile to update it!',
+        ratePerMinute: userData.ratePerMinute || 5000,
+        minuteIncrement: userData.minuteIncrement || 5,
         ratings: 5.0,
         totalConsults: 0
       });
@@ -68,30 +72,77 @@ const MainTabs = ({ userData, onLogout }: MainTabsProps) => {
     setCreators(mockCreators);
   }, [userData]);
   
-  const handleLogout = () => {
-    localStorage.removeItem('talktribe_user');
-    toast.success('Logged out successfully');
-    onLogout();
+  const handleSelectCreator = (creator: any) => {
+    // If the selected creator is the current user, go to profile tab
+    if (creator.id === currentUserData.id) {
+      setActiveTab('profile');
+      return;
+    }
+    
+    setSelectedCreator(creator);
+    setActiveTab('bookings');
+  };
+  
+  const handleUpdateUserData = (updatedData: any) => {
+    setCurrentUserData(updatedData);
+    
+    // Also update in creators list if user is a creator
+    if (updatedData.isCreator) {
+      setCreators(prev => {
+        const updatedCreators = [...prev];
+        const index = updatedCreators.findIndex(c => c.id === updatedData.id);
+        
+        if (index !== -1) {
+          updatedCreators[index] = {
+            ...updatedCreators[index],
+            name: updatedData.name,
+            profilePic: updatedData.profilePic,
+            bio: updatedData.bio,
+            ratePerMinute: updatedData.ratePerMinute,
+            minuteIncrement: updatedData.minuteIncrement
+          };
+        }
+        
+        return updatedCreators;
+      });
+    }
   };
   
   return (
     <div className="flex flex-col h-full bg-gray-50">
       <div className="flex justify-between items-center px-4 py-3 bg-white border-b">
         <h1 className="text-xl font-bold text-app-purple">TalkTimeTribe</h1>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={handleLogout}
-          title="Logout"
-        >
-          <LogOut className="h-5 w-5" />
-        </Button>
+        
+        <div className="flex items-center gap-2">
+          <SearchBar 
+            creators={creators} 
+            onSelectCreator={handleSelectCreator} 
+          />
+          
+          <SettingsModal 
+            userData={currentUserData} 
+            onLogout={onLogout}
+            onUpdateUserData={handleUpdateUserData}
+          />
+        </div>
       </div>
       
       <div className="flex-1 overflow-y-auto">
-        {activeTab === 'feed' && <SocialFeed userData={userData} />}
-        {activeTab === 'bookings' && <BookingScreen userData={userData} creators={creators} />}
-        {activeTab === 'profile' && <CreatorProfile userData={userData} isOwnProfile={true} />}
+        {activeTab === 'feed' && <SocialFeed userData={currentUserData} />}
+        {activeTab === 'bookings' && (
+          <BookingScreen 
+            userData={currentUserData} 
+            creators={creators} 
+            selectedCreator={selectedCreator}
+          />
+        )}
+        {activeTab === 'profile' && (
+          <CreatorProfile 
+            userData={currentUserData} 
+            isOwnProfile={true} 
+            onUpdateUserData={handleUpdateUserData}
+          />
+        )}
         {activeTab === 'messages' && (
           <div className="p-4">
             <h2 className="text-xl font-bold mb-4">Messages</h2>

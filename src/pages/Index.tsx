@@ -21,7 +21,12 @@ const Index = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("talktribe_user");
     setUser(null);
+  };
+  
+  const handleUpdateUserData = (updatedData: any) => {
+    setUser(updatedData);
   };
 
   if (isLoading) {
@@ -39,7 +44,10 @@ const Index = () => {
     <div className="h-screen overflow-hidden">
       <div className="h-full mobile-container">
         {user ? (
-          <MainTabs userData={user} onLogout={handleLogout} />
+          <MainTabs 
+            userData={user} 
+            onLogout={handleLogout} 
+          />
         ) : (
           <AuthScreen onAuthenticated={handleAuthenticated} />
         )}
