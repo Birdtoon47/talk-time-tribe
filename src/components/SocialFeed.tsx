@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Send, Image, Video } from 'lucide-react';
+import { Heart, MessageCircle, Send, Image as ImageIcon, Video, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SocialFeedProps {
@@ -18,7 +19,8 @@ interface Post {
   userName: string;
   userProfilePic: string;
   content: string;
-  image?: string;
+  media?: string;
+  mediaType?: 'image' | 'video';
   likes: number;
   isLiked: boolean;
   comments: Comment[];
@@ -39,6 +41,9 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [commentInputs, setCommentInputs] = useState<{[key: string]: string}>({});
   const [expandedComments, setExpandedComments] = useState<{[key: string]: boolean}>({});
+  const [postMedia, setPostMedia] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     // Load posts from localStorage
@@ -75,7 +80,8 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
           userName: 'Mike Williams',
           userProfilePic: 'https://i.pravatar.cc/150?img=3',
           content: 'New financial advice video dropping tomorrow! Get ready to learn about smart investment strategies for beginners.',
-          image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=2071&auto=format&fit=crop',
+          media: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=2071&auto=format&fit=crop',
+          mediaType: 'image',
           likes: 42,
           isLiked: true,
           comments: [],
@@ -124,9 +130,30 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
     }
   }, [posts]);
   
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Check file size (limit to 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File size exceeds 10MB limit");
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setPostMedia(event.target.result as string);
+          setMediaType(type);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
   const handleCreatePost = () => {
-    if (!newPostContent.trim()) {
-      toast.error('Please enter some content for your post');
+    if (!newPostContent.trim() && !postMedia) {
+      toast.error('Please enter some content or add media for your post');
       return;
     }
     
@@ -136,6 +163,8 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
       userName: userData.name,
       userProfilePic: userData.profilePic,
       content: newPostContent,
+      media: postMedia || undefined,
+      mediaType: mediaType || undefined,
       likes: 0,
       isLiked: false,
       comments: [],
@@ -144,6 +173,8 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
     
     setPosts([newPost, ...posts]);
     setNewPostContent('');
+    setPostMedia(null);
+    setMediaType(null);
     toast.success('Post created successfully!');
   };
   
@@ -239,16 +270,85 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
           className="mb-3"
         />
         
+        {postMedia && (
+          <div className="relative mb-3 border rounded-md overflow-hidden">
+            {mediaType === 'image' ? (
+              <img 
+                src={postMedia} 
+                alt="Post preview" 
+                className="w-full max-h-56 object-contain" 
+              />
+            ) : (
+              <video 
+                src={postMedia} 
+                controls 
+                className="w-full max-h-56" 
+              />
+            )}
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute top-2 right-2 rounded-full h-6 w-6 opacity-80"
+              onClick={() => {
+                setPostMedia(null);
+                setMediaType(null);
+              }}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+        
         <div className="flex justify-between">
-          <Button variant="outline" className="text-gray-600">
-            <Image className="h-4 w-4 mr-2" />
-            Add Image
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-gray-600"
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.accept = "image/*";
+                  fileInputRef.current.click();
+                }
+              }}
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Add Image
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-gray-600"
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.accept = "video/*";
+                  fileInputRef.current.click();
+                }
+              }}
+            >
+              <Video className="h-4 w-4 mr-2" />
+              Add Video
+            </Button>
+            
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.accept.includes('image')) {
+                  handleMediaUpload(e, 'image');
+                } else {
+                  handleMediaUpload(e, 'video');
+                }
+              }}
+            />
+          </div>
           
           <Button 
             onClick={handleCreatePost}
             className="bg-app-purple"
-            disabled={!newPostContent.trim()}
+            disabled={!newPostContent.trim() && !postMedia}
           >
             Post
           </Button>
@@ -271,12 +371,22 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
               
               <p className="mb-3">{post.content}</p>
               
-              {post.image && (
-                <img 
-                  src={post.image} 
-                  alt="Post content" 
-                  className="w-full h-64 object-cover rounded-md mb-3"
-                />
+              {post.media && (
+                <div className="mb-3">
+                  {(!post.mediaType || post.mediaType === 'image') ? (
+                    <img 
+                      src={post.media} 
+                      alt="Post content" 
+                      className="w-full h-64 object-cover rounded-md"
+                    />
+                  ) : (
+                    <video 
+                      src={post.media} 
+                      controls 
+                      className="w-full h-64 object-cover rounded-md"
+                    />
+                  )}
+                </div>
               )}
               
               <div className="flex items-center justify-between text-gray-500 text-sm pt-2">

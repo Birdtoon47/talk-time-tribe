@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { Home, Calendar, User, MessageSquare } from 'lucide-react';
+import { Home, Calendar, User, MessageSquare, PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import SocialFeed from './SocialFeed';
 import BookingScreen from './BookingScreen';
@@ -7,6 +8,10 @@ import CreatorProfile from './CreatorProfile';
 import SearchBar from './SearchBar';
 import SettingsModal from './SettingsModal';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface MainTabsProps {
   userData: any;
@@ -19,6 +24,13 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
   const [creators, setCreators] = useState<any[]>([]);
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
   const [currentUserData, setCurrentUserData] = useState(userData);
+  const [isCreateConsultationOpen, setIsCreateConsultationOpen] = useState(false);
+  const [newConsultation, setNewConsultation] = useState({
+    title: '',
+    description: '',
+    minuteIncrement: 5,
+    ratePerMinute: 5000
+  });
   
   useEffect(() => {
     // Load mock creators data
@@ -55,21 +67,44 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
       }
     ];
     
+    const storedCreators = localStorage.getItem('talktribe_creators');
+    let allCreators = storedCreators ? JSON.parse(storedCreators) : mockCreators;
+    
     if (userData.isCreator) {
-      // Add the current user as a creator
-      mockCreators.push({
-        id: userData.id,
-        name: userData.name,
-        profilePic: userData.profilePic,
-        bio: userData.bio || 'Your personal bio goes here. Edit your profile to update it!',
-        ratePerMinute: userData.ratePerMinute || 5000,
-        minuteIncrement: userData.minuteIncrement || 5,
-        ratings: 5.0,
-        totalConsults: 0
-      });
+      // Check if the current user already exists in the creators list
+      const existingCreatorIndex = allCreators.findIndex((c: any) => c.id === userData.id);
+      
+      if (existingCreatorIndex !== -1) {
+        // Update the existing creator entry
+        allCreators[existingCreatorIndex] = {
+          id: userData.id,
+          name: userData.name,
+          profilePic: userData.profilePic,
+          bio: userData.bio || 'Your personal bio goes here. Edit your profile to update it!',
+          ratePerMinute: userData.ratePerMinute || 5000,
+          minuteIncrement: userData.minuteIncrement || 5,
+          ratings: userData.ratings || 5.0,
+          totalConsults: userData.totalConsults || 0
+        };
+      } else {
+        // Add the current user as a creator
+        allCreators.push({
+          id: userData.id,
+          name: userData.name,
+          profilePic: userData.profilePic,
+          bio: userData.bio || 'Your personal bio goes here. Edit your profile to update it!',
+          ratePerMinute: userData.ratePerMinute || 5000,
+          minuteIncrement: userData.minuteIncrement || 5,
+          ratings: 5.0,
+          totalConsults: 0
+        });
+      }
+      
+      // Save the updated creators list to localStorage
+      localStorage.setItem('talktribe_creators', JSON.stringify(allCreators));
     }
     
-    setCreators(mockCreators);
+    setCreators(allCreators);
   }, [userData]);
   
   const handleSelectCreator = (creator: any) => {
@@ -109,6 +144,99 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
     
     // Pass the updated data back to the parent component
     onUpdateUserData(updatedData);
+  };
+  
+  const handleCreateConsultation = () => {
+    if (!currentUserData.isCreator) {
+      // Update user data to make them a creator
+      const updatedUserData = {
+        ...currentUserData,
+        isCreator: true,
+        ratePerMinute: newConsultation.ratePerMinute,
+        minuteIncrement: newConsultation.minuteIncrement,
+        bio: newConsultation.description
+      };
+      
+      setCurrentUserData(updatedUserData);
+      onUpdateUserData(updatedUserData);
+      
+      // Add the user to the creators list
+      const updatedCreators = [...creators];
+      const index = updatedCreators.findIndex(c => c.id === currentUserData.id);
+      
+      if (index !== -1) {
+        updatedCreators[index] = {
+          ...updatedCreators[index],
+          bio: newConsultation.description,
+          ratePerMinute: newConsultation.ratePerMinute,
+          minuteIncrement: newConsultation.minuteIncrement
+        };
+      } else {
+        updatedCreators.push({
+          id: currentUserData.id,
+          name: currentUserData.name,
+          profilePic: currentUserData.profilePic,
+          bio: newConsultation.description,
+          ratePerMinute: newConsultation.ratePerMinute,
+          minuteIncrement: newConsultation.minuteIncrement,
+          ratings: 5.0,
+          totalConsults: 0
+        });
+      }
+      
+      setCreators(updatedCreators);
+      localStorage.setItem('talktribe_creators', JSON.stringify(updatedCreators));
+    } else {
+      // Just update the existing creator profile
+      const updatedUserData = {
+        ...currentUserData,
+        ratePerMinute: newConsultation.ratePerMinute,
+        minuteIncrement: newConsultation.minuteIncrement,
+        bio: newConsultation.description || currentUserData.bio
+      };
+      
+      setCurrentUserData(updatedUserData);
+      onUpdateUserData(updatedUserData);
+      
+      // Update the creator in the creators list
+      const updatedCreators = [...creators];
+      const index = updatedCreators.findIndex(c => c.id === currentUserData.id);
+      
+      if (index !== -1) {
+        updatedCreators[index] = {
+          ...updatedCreators[index],
+          bio: newConsultation.description || updatedCreators[index].bio,
+          ratePerMinute: newConsultation.ratePerMinute,
+          minuteIncrement: newConsultation.minuteIncrement
+        };
+      }
+      
+      setCreators(updatedCreators);
+      localStorage.setItem('talktribe_creators', JSON.stringify(updatedCreators));
+    }
+    
+    // Close the dialog and show success message
+    setIsCreateConsultationOpen(false);
+    toast.success('Consultation service created successfully!');
+    // Reset the form
+    setNewConsultation({
+      title: '',
+      description: '',
+      minuteIncrement: 5,
+      ratePerMinute: 5000
+    });
+    
+    // Navigate to profile tab to see the changes
+    setActiveTab('profile');
+  };
+  
+  const formatCurrency = (amount: number) => {
+    const currencyCode = currentUserData.currencyCode || 'IDR';
+    return new Intl.NumberFormat('id-ID', { 
+      style: 'currency', 
+      currency: currencyCode,
+      minimumFractionDigits: 0
+    }).format(amount);
   };
   
   return (
@@ -164,7 +292,7 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
         )}
       </div>
       
-      <div className="grid grid-cols-4 bg-white border-t text-center">
+      <div className="grid grid-cols-5 bg-white border-t text-center">
         <button
           className={`p-3 flex flex-col items-center justify-center ${activeTab === 'feed' ? 'text-app-purple' : 'text-gray-500'}`}
           onClick={() => setActiveTab('feed')}
@@ -179,6 +307,16 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
         >
           <Calendar className="h-6 w-6" />
           <span className="text-xs mt-1">Bookings</span>
+        </button>
+        
+        <button
+          className="p-3 flex flex-col items-center justify-center text-app-purple"
+          onClick={() => setIsCreateConsultationOpen(true)}
+        >
+          <div className="bg-app-purple text-white rounded-full p-2">
+            <PlusCircle className="h-5 w-5" />
+          </div>
+          <span className="text-xs mt-1">Create</span>
         </button>
         
         <button
@@ -197,6 +335,76 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
           <span className="text-xs mt-1">Profile</span>
         </button>
       </div>
+      
+      <Dialog open={isCreateConsultationOpen} onOpenChange={setIsCreateConsultationOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create Consultation Service</DialogTitle>
+            <DialogDescription>
+              Set up your consultation offering to start earning.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input 
+                id="title" 
+                placeholder="e.g., Career Coaching, Financial Advice"
+                value={newConsultation.title}
+                onChange={(e) => setNewConsultation({...newConsultation, title: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea 
+                id="description" 
+                placeholder="Describe what you offer in your consultations..."
+                value={newConsultation.description}
+                onChange={(e) => setNewConsultation({...newConsultation, description: e.target.value})}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="rate">Rate (per minute)</Label>
+                <Input 
+                  id="rate" 
+                  type="number"
+                  value={newConsultation.ratePerMinute}
+                  onChange={(e) => setNewConsultation({...newConsultation, ratePerMinute: Number(e.target.value)})}
+                />
+                <p className="text-xs text-gray-500">
+                  {formatCurrency(newConsultation.ratePerMinute)} per minute
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="increment">Time Increment (minutes)</Label>
+                <Input 
+                  id="increment" 
+                  type="number"
+                  value={newConsultation.minuteIncrement}
+                  onChange={(e) => setNewConsultation({...newConsultation, minuteIncrement: Number(e.target.value)})}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button 
+              className="bg-app-purple" 
+              onClick={handleCreateConsultation}
+            >
+              Create Service
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
