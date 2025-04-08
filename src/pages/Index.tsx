@@ -17,6 +17,8 @@ const Index = () => {
   }, []);
 
   const handleAuthenticated = (userData: any) => {
+    // Save user data to localStorage for persistence
+    localStorage.setItem("talktribe_user", JSON.stringify(userData));
     setUser(userData);
   };
 
@@ -26,6 +28,8 @@ const Index = () => {
   };
   
   const handleUpdateUserData = (updatedData: any) => {
+    // Save updated user data to localStorage
+    localStorage.setItem("talktribe_user", JSON.stringify(updatedData));
     setUser(updatedData);
   };
 
@@ -47,6 +51,7 @@ const Index = () => {
           <MainTabs 
             userData={user} 
             onLogout={handleLogout} 
+            onUpdateUserData={handleUpdateUserData}
           />
         ) : (
           <AuthScreen onAuthenticated={handleAuthenticated} />

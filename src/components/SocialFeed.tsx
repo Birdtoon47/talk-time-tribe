@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Send, Image } from 'lucide-react';
+import { Heart, MessageCircle, Send, Image, Video } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SocialFeedProps {
@@ -42,72 +41,88 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
   const [expandedComments, setExpandedComments] = useState<{[key: string]: boolean}>({});
   
   useEffect(() => {
-    // Load mock posts
-    const mockPosts: Post[] = [
-      {
-        id: '1',
-        userId: '101',
-        userName: 'Sarah Johnson',
-        userProfilePic: 'https://i.pravatar.cc/150?img=1',
-        content: 'Just finished my latest tech tutorial! Excited to share insights on AI development with beginners. Book a consultation if you want personalized career guidance!',
-        likes: 24,
-        isLiked: false,
-        comments: [
-          {
-            id: 'c1',
-            userId: '102',
-            userName: 'Mike Williams',
-            userProfilePic: 'https://i.pravatar.cc/150?img=3',
-            content: 'Great content as always, Sarah! Looking forward to the consultation.',
-            timestamp: Date.now() - 3600000
-          }
-        ],
-        timestamp: Date.now() - 86400000
-      },
-      {
-        id: '2',
-        userId: '102',
-        userName: 'Mike Williams',
-        userProfilePic: 'https://i.pravatar.cc/150?img=3',
-        content: 'New financial advice video dropping tomorrow! Get ready to learn about smart investment strategies for beginners.',
-        image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=2071&auto=format&fit=crop',
-        likes: 42,
-        isLiked: true,
-        comments: [],
-        timestamp: Date.now() - 43200000
-      },
-      {
-        id: '3',
-        userId: '103',
-        userName: 'Jessica Lee',
-        userProfilePic: 'https://i.pravatar.cc/150?img=5',
-        content: 'Just wrapped up an amazing workout session with a client! Remember, consistency is key to achieving your fitness goals. Book a consultation to discuss your personalized fitness plan!',
-        likes: 18,
-        isLiked: false,
-        comments: [
-          {
-            id: 'c2',
-            userId: '101',
-            userName: 'Sarah Johnson',
-            userProfilePic: 'https://i.pravatar.cc/150?img=1',
-            content: 'Your energy is contagious, Jessica! 💪',
-            timestamp: Date.now() - 1800000
-          },
-          {
-            id: 'c3',
-            userId: '102',
-            userName: 'Mike Williams',
-            userProfilePic: 'https://i.pravatar.cc/150?img=3',
-            content: 'Great work! Looking to book a session soon.',
-            timestamp: Date.now() - 900000
-          }
-        ],
-        timestamp: Date.now() - 21600000
-      }
-    ];
+    // Load posts from localStorage
+    const storedPosts = localStorage.getItem('talktribe_social_feed');
     
-    setPosts(mockPosts);
+    if (storedPosts) {
+      setPosts(JSON.parse(storedPosts));
+    } else {
+      // Initialize with mock posts only if nothing in localStorage
+      const mockPosts: Post[] = [
+        {
+          id: '1',
+          userId: '101',
+          userName: 'Sarah Johnson',
+          userProfilePic: 'https://i.pravatar.cc/150?img=1',
+          content: 'Just finished my latest tech tutorial! Excited to share insights on AI development with beginners. Book a consultation if you want personalized career guidance!',
+          likes: 24,
+          isLiked: false,
+          comments: [
+            {
+              id: 'c1',
+              userId: '102',
+              userName: 'Mike Williams',
+              userProfilePic: 'https://i.pravatar.cc/150?img=3',
+              content: 'Great content as always, Sarah! Looking forward to the consultation.',
+              timestamp: Date.now() - 3600000
+            }
+          ],
+          timestamp: Date.now() - 86400000
+        },
+        {
+          id: '2',
+          userId: '102',
+          userName: 'Mike Williams',
+          userProfilePic: 'https://i.pravatar.cc/150?img=3',
+          content: 'New financial advice video dropping tomorrow! Get ready to learn about smart investment strategies for beginners.',
+          image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=2071&auto=format&fit=crop',
+          likes: 42,
+          isLiked: true,
+          comments: [],
+          timestamp: Date.now() - 43200000
+        },
+        {
+          id: '3',
+          userId: '103',
+          userName: 'Jessica Lee',
+          userProfilePic: 'https://i.pravatar.cc/150?img=5',
+          content: 'Just wrapped up an amazing workout session with a client! Remember, consistency is key to achieving your fitness goals. Book a consultation to discuss your personalized fitness plan!',
+          likes: 18,
+          isLiked: false,
+          comments: [
+            {
+              id: 'c2',
+              userId: '101',
+              userName: 'Sarah Johnson',
+              userProfilePic: 'https://i.pravatar.cc/150?img=1',
+              content: 'Your energy is contagious, Jessica! 💪',
+              timestamp: Date.now() - 1800000
+            },
+            {
+              id: 'c3',
+              userId: '102',
+              userName: 'Mike Williams',
+              userProfilePic: 'https://i.pravatar.cc/150?img=3',
+              content: 'Great work! Looking to book a session soon.',
+              timestamp: Date.now() - 900000
+            }
+          ],
+          timestamp: Date.now() - 21600000
+        }
+      ];
+      
+      // Save mock posts to localStorage
+      localStorage.setItem('talktribe_social_feed', JSON.stringify(mockPosts));
+      setPosts(mockPosts);
+    }
   }, []);
+  
+  // Save posts to localStorage whenever they change
+  useEffect(() => {
+    if (posts.length > 0) {
+      localStorage.setItem('talktribe_social_feed', JSON.stringify(posts));
+    }
+  }, [posts]);
   
   const handleCreatePost = () => {
     if (!newPostContent.trim()) {

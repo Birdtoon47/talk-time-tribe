@@ -1,8 +1,7 @@
 
 import { useState, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Camera, X, RefreshCw } from 'lucide-react';
+import { Camera, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AvatarUploadProps {
@@ -28,12 +27,6 @@ const AvatarUpload = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      
-      // Check file size (limit to 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error('Image must be less than 2MB');
-        return;
-      }
       
       setIsUploading(true);
       

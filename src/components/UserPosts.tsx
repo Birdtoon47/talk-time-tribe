@@ -1,10 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, MessageCircle, Share, Image as ImageIcon, Trash2, X } from 'lucide-react';
+import { Heart, MessageCircle, Share, Image as ImageIcon, Trash2, X, Video } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface UserPostsProps {
@@ -14,8 +14,10 @@ interface UserPostsProps {
 const UserPosts = ({ userData }: UserPostsProps) => {
   const [posts, setPosts] = useState<any[]>([]);
   const [newPostText, setNewPostText] = useState('');
-  const [postImage, setPostImage] = useState<string | null>(null);
+  const [postMedia, setPostMedia] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     // Load posts from localStorage
@@ -28,20 +30,18 @@ const UserPosts = ({ userData }: UserPostsProps) => {
     }
   }, [userData.id]);
   
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Check file size (limit to 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image must be less than 5MB');
-        return;
-      }
+      // Determine file type
+      const isVideo = file.type.startsWith('video/');
       
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          setPostImage(e.target.result as string);
+          setPostMedia(e.target.result as string);
+          setMediaType(isVideo ? 'video' : 'image');
         }
       };
       reader.readAsDataURL(file);
@@ -49,8 +49,8 @@ const UserPosts = ({ userData }: UserPostsProps) => {
   };
   
   const handleSubmitPost = () => {
-    if (newPostText.trim() === '' && !postImage) {
-      toast.error('Please add text or an image to your post');
+    if (newPostText.trim() === '' && !postMedia) {
+      toast.error('Please add text or media to your post');
       return;
     }
     
@@ -63,7 +63,8 @@ const UserPosts = ({ userData }: UserPostsProps) => {
       userName: userData.name,
       userProfilePic: userData.profilePic,
       text: newPostText,
-      image: postImage,
+      media: postMedia,
+      mediaType: mediaType,
       timestamp: new Date().toISOString(),
       likes: 0,
       comments: []
@@ -84,7 +85,8 @@ const UserPosts = ({ userData }: UserPostsProps) => {
     
     // Reset form
     setNewPostText('');
-    setPostImage(null);
+    setPostMedia(null);
+    setMediaType(null);
     setIsSubmitting(false);
     
     toast.success('Post created successfully');
@@ -137,18 +139,29 @@ const UserPosts = ({ userData }: UserPostsProps) => {
               className="resize-none mb-3"
             />
             
-            {postImage && (
+            {postMedia && (
               <div className="relative mb-3">
-                <img 
-                  src={postImage} 
-                  alt="Post preview" 
-                  className="w-full rounded-lg object-cover max-h-56"
-                />
+                {mediaType === 'image' ? (
+                  <img 
+                    src={postMedia} 
+                    alt="Post preview" 
+                    className="w-full rounded-lg object-cover max-h-56"
+                  />
+                ) : (
+                  <video 
+                    src={postMedia} 
+                    controls 
+                    className="w-full rounded-lg max-h-56"
+                  />
+                )}
                 <Button
                   variant="destructive"
                   size="icon"
                   className="absolute top-2 right-2 rounded-full h-6 w-6 opacity-80"
-                  onClick={() => setPostImage(null)}
+                  onClick={() => {
+                    setPostMedia(null);
+                    setMediaType(null);
+                  }}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -156,28 +169,48 @@ const UserPosts = ({ userData }: UserPostsProps) => {
             )}
             
             <div className="flex justify-between items-center">
-              <div>
+              <div className="flex gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   className="text-gray-500"
-                  onClick={() => document.getElementById('image-upload')?.click()}
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.setAttribute('accept', 'image/*');
+                      fileInputRef.current.click();
+                    }
+                  }}
                 >
                   <ImageIcon className="h-4 w-4 mr-1" />
                   <span>Image</span>
-                  <input
-                    type="file"
-                    id="image-upload"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
                 </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-500"
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.setAttribute('accept', 'video/*');
+                      fileInputRef.current.click();
+                    }
+                  }}
+                >
+                  <Video className="h-4 w-4 mr-1" />
+                  <span>Video</span>
+                </Button>
+                
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleMediaUpload}
+                  className="hidden"
+                />
               </div>
               
               <Button
                 onClick={handleSubmitPost}
-                disabled={isSubmitting || (newPostText.trim() === '' && !postImage)}
+                disabled={isSubmitting || (newPostText.trim() === '' && !postMedia)}
                 className="bg-app-purple"
                 size="sm"
               >
@@ -223,13 +256,21 @@ const UserPosts = ({ userData }: UserPostsProps) => {
                 <p className="my-3">{post.text}</p>
               )}
               
-              {post.image && (
+              {post.media && (
                 <div className="mt-3 mb-4">
-                  <img 
-                    src={post.image} 
-                    alt="Post" 
-                    className="w-full rounded-lg object-cover max-h-96"
-                  />
+                  {(post.mediaType === 'image' || !post.mediaType) ? (
+                    <img 
+                      src={post.media} 
+                      alt="Post" 
+                      className="w-full rounded-lg object-cover max-h-96"
+                    />
+                  ) : (
+                    <video 
+                      src={post.media} 
+                      controls 
+                      className="w-full rounded-lg max-h-96"
+                    />
+                  )}
                 </div>
               )}
               

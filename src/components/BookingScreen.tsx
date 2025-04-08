@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -21,13 +21,35 @@ interface BookingScreenProps {
   selectedCreator?: any;
 }
 
-const BookingScreen = ({ userData, creators, selectedCreator }: BookingScreenProps) => {
+interface Booking {
+  id: string;
+  creatorId: string;
+  userId: string;
+  date: string;
+  time: string;
+  duration: number;
+  consultationType: 'video' | 'audio' | 'chat';
+  totalPrice: number;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  createdAt: string;
+}
+
+const BookingScreen = ({ userData, creators = [], selectedCreator }: BookingScreenProps) => {
   const [availableCreators, setAvailableCreators] = useState(creators || []);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [consultationType, setConsultationType] = useState<'video' | 'audio' | 'chat'>('video');
   const [activeTab, setActiveTab] = useState('date');
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  
+  // Load existing bookings from localStorage
+  useEffect(() => {
+    const storedBookings = localStorage.getItem('talktribe_bookings');
+    if (storedBookings) {
+      setBookings(JSON.parse(storedBookings));
+    }
+  }, []);
   
   const handleBookConsultation = () => {
     if (!selectedCreator || !selectedDate || !selectedTime || !selectedDuration) {
@@ -35,9 +57,45 @@ const BookingScreen = ({ userData, creators, selectedCreator }: BookingScreenPro
       return;
     }
     
-    // Here we would typically make an API call to book the consultation
-    // For now, we'll just show a success message
+    // Create new booking
+    const newBooking: Booking = {
+      id: Date.now().toString(),
+      creatorId: selectedCreator.id,
+      userId: userData.id,
+      date: selectedDate.toISOString(),
+      time: selectedTime,
+      duration: selectedDuration,
+      consultationType,
+      totalPrice: calculateTotalPrice(),
+      status: 'scheduled',
+      createdAt: new Date().toISOString()
+    };
+    
+    // Add to existing bookings
+    const updatedBookings = [...bookings, newBooking];
+    
+    // Save to localStorage
+    localStorage.setItem('talktribe_bookings', JSON.stringify(updatedBookings));
+    
+    // Update state
+    setBookings(updatedBookings);
+    
+    // Reset form
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setSelectedDuration(null);
+    setConsultationType('video');
+    setActiveTab('date');
+    
+    // Show success message
     toast.success('Consultation booked successfully!');
+    
+    // Notify creator (in a real app, this would send a notification)
+    // For demo purposes, we'll just log to console
+    console.log(`Booking created for creator: ${selectedCreator.name}`, newBooking);
+    
+    // Dispatch an event to reset the creator selection
+    window.dispatchEvent(new CustomEvent('booking-completed'));
   };
   
   const formatCurrency = (amount: number) => {
@@ -63,6 +121,8 @@ const BookingScreen = ({ userData, creators, selectedCreator }: BookingScreenPro
                 onClick={() => {
                   if (creator.id !== userData.id) {
                     window.dispatchEvent(new CustomEvent('select-creator', { detail: creator }));
+                  } else {
+                    toast.error("You cannot book a consultation with yourself");
                   }
                 }}
               >
