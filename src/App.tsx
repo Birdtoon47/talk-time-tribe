@@ -8,7 +8,6 @@ import { useState, useEffect } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Checkout from "./pages/Checkout";
-import { Calendar, Home, MessageSquare, ShoppingCart, User } from "lucide-react";
 
 const queryClient = new QueryClient();
 
