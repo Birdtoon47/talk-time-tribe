@@ -10,7 +10,7 @@ import { formatCurrency, formatDate, formatTime } from '@/utils/formatters';
 import { createBookingNotification } from '@/utils/notifications';
 import { safeGetItem, safeSetItem } from '@/utils/storage';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, CreditCard, Wallet, Banknote } from 'lucide-react';
+import { ArrowLeft, Check, CreditCard, Wallet, Banknote, Home, Calendar, ShoppingCart, MessageSquare, User } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import PaymentMethodSelector from '@/components/checkout/PaymentMethodSelector';
