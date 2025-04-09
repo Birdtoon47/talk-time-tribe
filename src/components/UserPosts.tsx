@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Heart, MessageCircle, Share, Image as ImageIcon, Trash2, X, Video } from 'lucide-react';
 import { toast } from 'sonner';
+import { safeGetItem, safeSetItem } from '@/utils/storage';
 
 interface UserPostsProps {
   userData: any;
@@ -20,19 +21,22 @@ const UserPosts = ({ userData }: UserPostsProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    // Load posts from localStorage
-    const storedPosts = localStorage.getItem('talktribe_posts');
-    if (storedPosts) {
-      const allPosts = JSON.parse(storedPosts);
-      // Filter to show only the user's posts
-      const userPosts = allPosts.filter((post: any) => post.userId === userData.id);
-      setPosts(userPosts);
-    }
+    // Load posts from localStorage using safe utility
+    const allPosts = safeGetItem('talktribe_posts', []);
+    // Filter to show only the user's posts
+    const userPosts = allPosts.filter((post: any) => post.userId === userData.id);
+    setPosts(userPosts);
   }, [userData.id]);
   
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // Check file size - limit to 1MB to avoid localStorage issues
+      if (file.size > 1024 * 1024) {
+        toast.error('File is too large. Please select a file under 1MB.');
+        return;
+      }
       
       // Determine file type
       const isVideo = file.type.startsWith('video/');
@@ -70,15 +74,18 @@ const UserPosts = ({ userData }: UserPostsProps) => {
       comments: []
     };
     
-    // Get existing posts
-    const storedPosts = localStorage.getItem('talktribe_posts');
-    let allPosts = storedPosts ? JSON.parse(storedPosts) : [];
+    // Get existing posts using safe utility
+    const allPosts = safeGetItem('talktribe_posts', []);
     
     // Add new post at the beginning
-    allPosts = [newPost, ...allPosts];
+    const updatedPosts = [newPost, ...allPosts];
     
-    // Save to localStorage
-    localStorage.setItem('talktribe_posts', JSON.stringify(allPosts));
+    // Save to localStorage using safe utility
+    const success = safeSetItem('talktribe_posts', updatedPosts);
+    
+    if (!success) {
+      toast.warning('Your post was saved but media might be compressed due to storage limitations');
+    }
     
     // Update state
     setPosts(prev => [newPost, ...prev]);
@@ -93,17 +100,14 @@ const UserPosts = ({ userData }: UserPostsProps) => {
   };
   
   const handleDeletePost = (postId: string) => {
-    // Get all posts
-    const storedPosts = localStorage.getItem('talktribe_posts');
-    if (!storedPosts) return;
-    
-    const allPosts = JSON.parse(storedPosts);
+    // Get all posts using safe utility
+    const allPosts = safeGetItem('talktribe_posts', []);
     
     // Filter out the post to delete
     const updatedPosts = allPosts.filter((post: any) => post.id !== postId);
     
-    // Save to localStorage
-    localStorage.setItem('talktribe_posts', JSON.stringify(updatedPosts));
+    // Save to localStorage using safe utility
+    safeSetItem('talktribe_posts', updatedPosts);
     
     // Update state
     setPosts(prev => prev.filter(post => post.id !== postId));

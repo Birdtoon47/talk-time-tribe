@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { safeSetItem, safeGetItem } from '@/utils/storage';
+import { formatCurrency } from '@/utils/formatters';
 
 interface MainTabsProps {
   userData: any;
@@ -67,8 +69,9 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
       }
     ];
     
-    const storedCreators = localStorage.getItem('talktribe_creators');
-    let allCreators = storedCreators ? JSON.parse(storedCreators) : mockCreators;
+    // Use our safe storage utility to get creators
+    const storedCreators = safeGetItem('talktribe_creators', []);
+    let allCreators = storedCreators.length > 0 ? storedCreators : mockCreators;
     
     if (userData.isCreator) {
       // Check if the current user already exists in the creators list
@@ -100,8 +103,8 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
         });
       }
       
-      // Save the updated creators list to localStorage
-      localStorage.setItem('talktribe_creators', JSON.stringify(allCreators));
+      // Save the updated creators list using our safe storage utility
+      safeSetItem('talktribe_creators', allCreators);
     }
     
     setCreators(allCreators);
@@ -138,6 +141,8 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
           };
         }
         
+        // Save with safe utility
+        safeSetItem('talktribe_creators', updatedCreators);
         return updatedCreators;
       });
     }
@@ -185,7 +190,8 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
       }
       
       setCreators(updatedCreators);
-      localStorage.setItem('talktribe_creators', JSON.stringify(updatedCreators));
+      // Save with safe utility
+      safeSetItem('talktribe_creators', updatedCreators);
     } else {
       // Just update the existing creator profile
       const updatedUserData = {
@@ -212,7 +218,8 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
       }
       
       setCreators(updatedCreators);
-      localStorage.setItem('talktribe_creators', JSON.stringify(updatedCreators));
+      // Save with safe utility
+      safeSetItem('talktribe_creators', updatedCreators);
     }
     
     // Close the dialog and show success message
