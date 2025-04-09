@@ -7,6 +7,8 @@ import BookingScreen from './BookingScreen';
 import CreatorProfile from './CreatorProfile';
 import SearchBar from './SearchBar';
 import SettingsModal from './SettingsModal';
+import NotificationsDropdown from './NotificationsDropdown';
+import InboxDropdown from './InboxDropdown';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -256,6 +258,10 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
             creators={creators} 
             onSelectCreator={handleSelectCreator} 
           />
+          
+          <NotificationsDropdown />
+          
+          <InboxDropdown userData={userData} />
           
           <SettingsModal 
             userData={currentUserData} 

@@ -3,9 +3,12 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CreditCard } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface PaymentDetailsProps {
   creatorName: string;
+  creatorId: string;
+  creatorProfilePic: string;
   selectedDate: Date | null;
   selectedTime: string | null;
   selectedDuration: number | null;
@@ -13,18 +16,42 @@ interface PaymentDetailsProps {
   totalPrice: number;
   onBookConsultation: () => void;
   formatCurrency: (amount: number) => string;
+  userData: any;
 }
 
 const PaymentDetails = ({ 
   creatorName,
+  creatorId,
+  creatorProfilePic,
   selectedDate,
   selectedTime,
   selectedDuration,
   consultationType,
   totalPrice,
   onBookConsultation,
-  formatCurrency
+  formatCurrency,
+  userData
 }: PaymentDetailsProps) => {
+  const navigate = useNavigate();
+
+  const handleProceedToCheckout = () => {
+    // Create booking details object to pass to checkout page
+    const bookingDetails = {
+      creatorId,
+      creatorName,
+      creatorProfilePic,
+      date: selectedDate?.toISOString(),
+      time: selectedTime,
+      duration: selectedDuration,
+      consultationType,
+      totalPrice,
+      userId: userData
+    };
+    
+    // Navigate to checkout page with booking details
+    navigate('/checkout', { state: { bookingDetails } });
+  };
+
   return (
     <div className="space-y-4">
       <Card className="p-4">
@@ -76,7 +103,7 @@ const PaymentDetails = ({
       
       <Button 
         className="w-full bg-app-purple"
-        onClick={onBookConsultation}
+        onClick={handleProceedToCheckout}
       >
         Pay & Book Consultation
       </Button>

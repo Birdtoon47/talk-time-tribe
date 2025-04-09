@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
 // Import components
@@ -277,6 +276,8 @@ const BookingScreen = ({ userData, creators = [], selectedCreator: initialSelect
         <TabsContent value="payment">
           <PaymentDetails 
             creatorName={selectedCreator.name}
+            creatorId={selectedCreator.id}
+            creatorProfilePic={selectedCreator.profilePic}
             selectedDate={selectedDate}
             selectedTime={selectedTime}
             selectedDuration={selectedDuration}
@@ -284,6 +285,7 @@ const BookingScreen = ({ userData, creators = [], selectedCreator: initialSelect
             totalPrice={calculateTotalPrice()}
             onBookConsultation={handleBookConsultation}
             formatCurrency={formatCurrencyWithUserCode}
+            userData={userData}
           />
         </TabsContent>
       </BookingTabs>
