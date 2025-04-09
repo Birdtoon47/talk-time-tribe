@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Check, Trash2, X, Send } from 'lucide-react';
+import { MessageSquare, Check, Trash2, X, Send, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -12,6 +13,18 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { safeGetItem, safeSetItem } from '@/utils/storage';
 import { getInitials } from '@/utils/formatters';
 import { useNavigate } from 'react-router-dom';
+import { createMessageNotification } from '@/utils/notifications';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from 'sonner';
 
 export interface Message {
   id: string;
@@ -23,6 +36,7 @@ export interface Message {
   isRead: boolean;
   timestamp: string;
   bookingId?: string;
+  attachments?: string[];
 }
 
 export interface Conversation {
@@ -42,6 +56,8 @@ const InboxDropdown = ({ userData }: { userData: any }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [activeTab, setActiveTab] = useState('inbox');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const loadConversations = () => {
@@ -187,8 +203,19 @@ const InboxDropdown = ({ userData }: { userData: any }) => {
     loadConversationMessages(activeConversation);
     loadConversations();
     
+    // Create a notification for the recipient (simulated)
+    if (process.env.NODE_ENV !== 'production') {
+      setTimeout(() => {
+        createMessageNotification(userData.name, newMessage.trim());
+        window.dispatchEvent(new CustomEvent('notification-added'));
+      }, 1000);
+    }
+    
     // Notify any listeners
     window.dispatchEvent(new CustomEvent('messages-changed'));
+    
+    // Show success toast
+    toast.success("Message sent");
   };
 
   const handleOpenConversation = (conversationId: string) => {
@@ -202,6 +229,47 @@ const InboxDropdown = ({ userData }: { userData: any }) => {
       e.preventDefault();
       sendMessage();
     }
+  };
+  
+  const handleDeleteConversation = (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConversationToDelete(conversationId);
+    setDeleteDialogOpen(true);
+  };
+  
+  const confirmDeleteConversation = () => {
+    if (!conversationToDelete) return;
+    
+    const allMessages = safeGetItem<Message[]>('talktribe_messages', []);
+    
+    // Remove all messages from this conversation
+    const updatedMessages = allMessages.filter(message => 
+      !(
+        (message.senderId === userData.id && message.receiverId === conversationToDelete) ||
+        (message.senderId === conversationToDelete && message.receiverId === userData.id)
+      )
+    );
+    
+    safeSetItem('talktribe_messages', updatedMessages);
+    
+    // Reset states
+    if (activeConversation === conversationToDelete) {
+      setActiveConversation(null);
+      setActiveTab('inbox');
+    }
+    
+    // Refresh conversations
+    loadConversations();
+    
+    // Notify any listeners
+    window.dispatchEvent(new CustomEvent('messages-changed'));
+    
+    // Close the dialog
+    setDeleteDialogOpen(false);
+    setConversationToDelete(null);
+    
+    // Show success toast
+    toast.success("Conversation deleted");
   };
 
   const formatMessageDate = (dateString: string) => {
@@ -228,126 +296,166 @@ const InboxDropdown = ({ userData }: { userData: any }) => {
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <MessageSquare className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <Tabs defaultValue="inbox" value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex items-center justify-between p-2 border-b">
-            <TabsList>
-              <TabsTrigger value="inbox" onClick={() => setActiveConversation(null)}>Inbox</TabsTrigger>
-              <TabsTrigger value="messages" disabled={!activeConversation}>Messages</TabsTrigger>
-            </TabsList>
-            
-            {activeTab === 'messages' && (
-              <Button variant="ghost" size="sm" onClick={() => setActiveTab('inbox')}>
-                <X className="h-4 w-4" />
-              </Button>
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="icon" className="relative">
+            <MessageSquare className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Badge>
             )}
-          </div>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-0" align="end">
+          <Tabs defaultValue="inbox" value={activeTab} onValueChange={setActiveTab}>
+            <div className="flex items-center justify-between p-2 border-b">
+              <TabsList>
+                <TabsTrigger value="inbox" onClick={() => setActiveConversation(null)}>Inbox</TabsTrigger>
+                <TabsTrigger value="messages" disabled={!activeConversation}>Messages</TabsTrigger>
+              </TabsList>
+              
+              {activeTab === 'messages' && (
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab('inbox')}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
 
-          <TabsContent value="inbox" className="m-0">
-            {conversations.length === 0 ? (
-              <div className="p-4 text-center text-muted-foreground">
-                No messages yet
-              </div>
-            ) : (
-              <ScrollArea className="max-h-[300px]">
-                <div className="flex flex-col">
-                  {conversations.map((conversation) => (
-                    <div 
-                      key={conversation.id} 
-                      className={`p-3 cursor-pointer hover:bg-muted flex items-center gap-2 ${conversation.unreadCount > 0 ? 'bg-muted/50' : ''}`}
-                      onClick={() => handleOpenConversation(conversation.id)}
-                    >
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={conversation.participantProfilePic} alt={conversation.participantName} />
-                        <AvatarFallback>{getInitials(conversation.participantName)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex justify-between">
-                          <p className="font-medium">
-                            {conversation.participantName}
-                          </p>
-                          <span className="text-xs text-muted-foreground">
-                            {formatMessageDate(conversation.lastMessage.timestamp)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {truncateText(conversation.lastMessage.content, 30)}
-                        </p>
-                      </div>
-                      {conversation.unreadCount > 0 && (
-                        <Badge variant="destructive" className="h-5 w-5 flex items-center justify-center p-0">
-                          {conversation.unreadCount}
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
+            <TabsContent value="inbox" className="m-0">
+              {conversations.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  No messages yet
                 </div>
-              </ScrollArea>
-            )}
-          </TabsContent>
-
-          <TabsContent value="messages" className="m-0">
-            {activeConversation && (
-              <>
-                <ScrollArea className="max-h-[250px] p-3">
-                  <div className="flex flex-col gap-2">
-                    {messages.map((message) => (
+              ) : (
+                <ScrollArea className="max-h-[300px]">
+                  <div className="flex flex-col">
+                    {conversations.map((conversation) => (
                       <div 
-                        key={message.id} 
-                        className={`flex ${message.senderId === userData.id ? 'justify-end' : 'justify-start'}`}
+                        key={conversation.id} 
+                        className={`p-3 cursor-pointer hover:bg-muted flex items-center gap-2 ${conversation.unreadCount > 0 ? 'bg-muted/50' : ''}`}
+                        onClick={() => handleOpenConversation(conversation.id)}
                       >
-                        <div 
-                          className={`max-w-[80%] rounded-lg p-2 ${
-                            message.senderId === userData.id 
-                              ? 'bg-app-purple text-white rounded-tr-none' 
-                              : 'bg-gray-100 rounded-tl-none'
-                          }`}
-                        >
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                          <p className="text-xs text-right mt-1 opacity-70">
-                            {formatMessageDate(message.timestamp)}
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={conversation.participantProfilePic} alt={conversation.participantName} />
+                          <AvatarFallback>{getInitials(conversation.participantName)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex justify-between">
+                            <p className="font-medium">
+                              {conversation.participantName}
+                            </p>
+                            <div className="flex items-center">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={(e) => handleDeleteConversation(conversation.id, e)}
+                              >
+                                <Trash2 className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                              <span className="text-xs text-muted-foreground">
+                                {formatMessageDate(conversation.lastMessage.timestamp)}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {truncateText(conversation.lastMessage.content, 30)}
                           </p>
                         </div>
+                        {conversation.unreadCount > 0 && (
+                          <Badge variant="destructive" className="h-5 w-5 flex items-center justify-center p-0">
+                            {conversation.unreadCount}
+                          </Badge>
+                        )}
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
-                <div className="p-3 border-t mt-auto">
-                  <div className="flex items-end gap-2">
-                    <Textarea 
-                      placeholder="Type a message..." 
-                      className="min-h-[60px]"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={handleKeyPress}
-                    />
-                    <Button 
-                      size="icon" 
-                      className="h-10 w-10 shrink-0 bg-app-purple"
-                      onClick={sendMessage}
-                      disabled={!newMessage.trim()}
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
+              )}
+            </TabsContent>
+
+            <TabsContent value="messages" className="m-0">
+              {activeConversation && (
+                <>
+                  <ScrollArea className="max-h-[250px] p-3">
+                    <div className="flex flex-col gap-2">
+                      {messages.map((message) => (
+                        <div 
+                          key={message.id} 
+                          className={`flex ${message.senderId === userData.id ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div 
+                            className={`max-w-[80%] rounded-lg p-2 ${
+                              message.senderId === userData.id 
+                                ? 'bg-app-purple text-white rounded-tr-none' 
+                                : 'bg-gray-100 rounded-tl-none'
+                            }`}
+                          >
+                            {message.bookingId && (
+                              <div className="flex items-center mb-2 text-xs">
+                                <FileText className="h-3 w-3 mr-1" />
+                                <span>Booking Details Attached</span>
+                              </div>
+                            )}
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            <div className="flex justify-between items-center mt-1">
+                              <span className={`text-xs ${message.isRead && message.senderId === userData.id ? 'opacity-70' : 'opacity-0'}`}>
+                                <Check className="h-3 w-3 inline" /> Read
+                              </span>
+                              <p className="text-xs text-right opacity-70">
+                                {formatMessageDate(message.timestamp)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                  <div className="p-3 border-t mt-auto">
+                    <div className="flex items-end gap-2">
+                      <Textarea 
+                        placeholder="Type a message..." 
+                        className="min-h-[60px]"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                      />
+                      <Button 
+                        size="icon" 
+                        className="h-10 w-10 shrink-0 bg-app-purple"
+                        onClick={sendMessage}
+                        disabled={!newMessage.trim()}
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
-          </TabsContent>
-        </Tabs>
-      </PopoverContent>
-    </Popover>
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
+        </PopoverContent>
+      </Popover>
+      
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all messages in this conversation. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteConversation} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

@@ -12,6 +12,27 @@ import Checkout from "./pages/Checkout";
 const queryClient = new QueryClient();
 
 const App = () => {
+  // Listen for the custom 'notification-added' event
+  useEffect(() => {
+    const handleNotificationAdded = () => {
+      // Play a sound or show a visual indicator
+      // This is a simple implementation - in a real app you might use a sound library
+      try {
+        const audio = new Audio('/notification-sound.mp3');
+        audio.volume = 0.2;
+        audio.play().catch(e => console.log('Audio play prevented by browser', e));
+      } catch (error) {
+        console.log('Audio not supported', error);
+      }
+    };
+    
+    window.addEventListener('notification-added', handleNotificationAdded);
+    
+    return () => {
+      window.removeEventListener('notification-added', handleNotificationAdded);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

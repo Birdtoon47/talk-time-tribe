@@ -97,3 +97,36 @@ export const getUnreadCount = (): number => {
   const notifications = getNotifications();
   return notifications.filter(notification => !notification.isRead).length;
 };
+
+/**
+ * Create a system notification about a new message
+ */
+export const createMessageNotification = (senderName: string, messagePreview: string): void => {
+  addNotification({
+    title: `New message from ${senderName}`,
+    message: messagePreview.length > 50 ? `${messagePreview.substring(0, 50)}...` : messagePreview,
+    type: "info",
+  });
+};
+
+/**
+ * Create a system notification about a booking
+ */
+export const createBookingNotification = (creatorName: string, bookingAction: string, date: string): void => {
+  addNotification({
+    title: `Booking ${bookingAction}`,
+    message: `Your consultation with ${creatorName} on ${new Date(date).toLocaleDateString()} has been ${bookingAction}.`,
+    type: "success",
+  });
+};
+
+/**
+ * Create a system notification about a cancellation
+ */
+export const createCancellationNotification = (creatorName: string, date: string): void => {
+  addNotification({
+    title: "Booking Cancelled",
+    message: `Your consultation with ${creatorName} on ${new Date(date).toLocaleDateString()} has been cancelled.`,
+    type: "error",
+  });
+};
