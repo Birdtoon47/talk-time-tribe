@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,15 @@ const UserPosts = ({ userData }: UserPostsProps) => {
       return timeB - timeA;
     });
     
-    setPosts(userPosts);
+    // Ensure each post has a comments array to prevent "length of undefined" errors
+    const sanitizedPosts = userPosts.map((post: any) => {
+      return {
+        ...post,
+        comments: Array.isArray(post.comments) ? post.comments : []
+      };
+    });
+    
+    setPosts(sanitizedPosts);
   }, [userData.id]);
   
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,7 +157,7 @@ const UserPosts = ({ userData }: UserPostsProps) => {
     
     // Check if the date is valid
     if (isNaN(date.getTime())) {
-      return 'Invalid date';
+      return 'Just now';
     }
     
     return date.toLocaleDateString('en-US', {
@@ -315,12 +324,12 @@ const UserPosts = ({ userData }: UserPostsProps) => {
               <div className="flex justify-between items-center mt-4 text-gray-500 text-sm">
                 <button className="flex items-center gap-1">
                   <Heart className="h-4 w-4" />
-                  <span>{post.likes}</span>
+                  <span>{post.likes || 0}</span>
                 </button>
                 
                 <button className="flex items-center gap-1">
                   <MessageCircle className="h-4 w-4" />
-                  <span>{post.comments?.length || 0}</span>
+                  <span>{Array.isArray(post.comments) ? post.comments.length : 0}</span>
                 </button>
                 
                 <button className="flex items-center gap-1">

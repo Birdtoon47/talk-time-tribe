@@ -148,7 +148,15 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
       return timeB - timeA;
     });
     
-    setPosts(combinedPosts);
+    // Ensure each post has a comments array to prevent "length of undefined" errors
+    const sanitizedPosts = combinedPosts.map((post: any) => {
+      return {
+        ...post,
+        comments: Array.isArray(post.comments) ? post.comments : []
+      };
+    });
+    
+    setPosts(sanitizedPosts);
   }, []);
   
   // Save posts to localStorage whenever they change, but not on every render
@@ -260,9 +268,11 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
     setPosts(prevPosts => 
       prevPosts.map(post => {
         if (post.id === postId) {
+          // Ensure post.comments is an array before spreading it
+          const comments = Array.isArray(post.comments) ? post.comments : [];
           return {
             ...post,
-            comments: [...post.comments, newComment]
+            comments: [...comments, newComment]
           };
         }
         return post;
@@ -301,6 +311,9 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
     }
     
     const diffInDays = Math.floor(diffInHours / 24);
+    if (isNaN(diffInDays) || diffInDays < 0) {
+      return 'Just now'; // Handle invalid dates
+    }
     return `${diffInDays}d ago`;
   };
   
@@ -459,13 +472,14 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
                     onClick={() => toggleComments(post.id)}
                   >
                     <MessageCircle className="h-4 w-4 mr-1" />
-                    <span>{post.comments.length}</span>
+                    <span>{Array.isArray(post.comments) ? post.comments.length : 0}</span>
                   </Button>
                 </div>
               </div>
             </div>
             
-            {(expandedComments[post.id] || post.comments.length < 3) && post.comments.length > 0 && (
+            {(expandedComments[post.id] || (Array.isArray(post.comments) && post.comments.length < 3)) && 
+             Array.isArray(post.comments) && post.comments.length > 0 && (
               <div className="px-4 py-2 bg-gray-50">
                 {post.comments.map(comment => (
                   <div key={comment.id} className="py-2">
