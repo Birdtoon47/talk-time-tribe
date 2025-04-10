@@ -25,6 +25,7 @@ interface Post {
   isLiked: boolean;
   comments: Comment[];
   timestamp: number;
+  source?: string;
 }
 
 interface Comment {
@@ -72,7 +73,8 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
               timestamp: Date.now() - 3600000
             }
           ],
-          timestamp: Date.now() - 86400000
+          timestamp: Date.now() - 86400000,
+          source: 'feed'
         },
         {
           id: '2',
@@ -85,7 +87,8 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
           likes: 42,
           isLiked: true,
           comments: [],
-          timestamp: Date.now() - 43200000
+          timestamp: Date.now() - 43200000,
+          source: 'feed'
         },
         {
           id: '3',
@@ -113,13 +116,36 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
               timestamp: Date.now() - 900000
             }
           ],
-          timestamp: Date.now() - 21600000
+          timestamp: Date.now() - 21600000,
+          source: 'feed'
         }
       ];
       
       // Save mock posts to localStorage
       localStorage.setItem('talktribe_social_feed', JSON.stringify(mockPosts));
       setPosts(mockPosts);
+    }
+    
+    // Load user posts that should be shown in the feed
+    const userPosts = localStorage.getItem('talktribe_posts');
+    if (userPosts) {
+      const parsedUserPosts = JSON.parse(userPosts);
+      // Filter to exclude posts that have source === 'profile'
+      const feedPosts = parsedUserPosts.filter((post: any) => post.source !== 'profile');
+      
+      if (feedPosts.length > 0) {
+        // Combine with existing feed posts
+        const allPosts = [...feedPosts, ...posts];
+        
+        // Sort by timestamp (newest first)
+        allPosts.sort((a: any, b: any) => {
+          const timeA = new Date(a.timestamp).getTime();
+          const timeB = new Date(b.timestamp).getTime();
+          return timeB - timeA;
+        });
+        
+        setPosts(allPosts);
+      }
     }
   }, []);
   
@@ -168,13 +194,21 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
       likes: 0,
       isLiked: false,
       comments: [],
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      source: 'feed' // Mark this post as created from the feed
     };
     
     setPosts([newPost, ...posts]);
     setNewPostContent('');
     setPostMedia(null);
     setMediaType(null);
+    
+    // Also save to talktribe_posts for consistency
+    const allPosts = localStorage.getItem('talktribe_posts');
+    let parsedPosts = allPosts ? JSON.parse(allPosts) : [];
+    parsedPosts = [newPost, ...parsedPosts];
+    localStorage.setItem('talktribe_posts', JSON.stringify(parsedPosts));
+    
     toast.success('Post created successfully!');
   };
   

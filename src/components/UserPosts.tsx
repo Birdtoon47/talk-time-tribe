@@ -71,7 +71,8 @@ const UserPosts = ({ userData }: UserPostsProps) => {
       mediaType: mediaType,
       timestamp: new Date().toISOString(),
       likes: 0,
-      comments: []
+      comments: [],
+      source: 'profile' // Add a source flag to identify posts created from profile
     };
     
     // Get existing posts using safe utility

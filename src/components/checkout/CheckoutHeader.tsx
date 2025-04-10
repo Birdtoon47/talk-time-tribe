@@ -8,7 +8,7 @@ const CheckoutHeader = () => {
   const navigate = useNavigate();
   
   return (
-    <div className="flex justify-between items-center px-4 py-3 bg-white border-b">
+    <div className="flex justify-between items-center px-4 py-3 bg-white border-b container max-w-2xl mx-auto">
       <h1 className="text-xl font-bold text-app-purple">TalkTimeTribe</h1>
       
       <div className="flex items-center gap-2">

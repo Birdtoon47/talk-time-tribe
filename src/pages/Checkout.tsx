@@ -41,6 +41,11 @@ const Checkout = () => {
     const methods = safeGetItem('talktribe_payment_methods', []);
     setSavedPaymentMethods(methods);
     
+    // If there are saved methods, select the first one by default
+    if (methods.length > 0 && !selectedPaymentMethodId) {
+      setSelectedPaymentMethodId(methods[0].id);
+    }
+    
     // Load user data
     const user = safeGetItem('talktribe_user', null);
     setUserData(user);
@@ -155,6 +160,7 @@ const Checkout = () => {
     }
     
     // Validate fields for paid consultations
+    // Fix: Check if adding new payment OR if a saved payment method is selected
     if (!selectedPaymentMethodId && !showAddNewPayment) {
       toast.error('Please select a payment method');
       return;
