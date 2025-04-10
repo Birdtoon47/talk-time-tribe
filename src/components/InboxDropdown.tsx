@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Check, Trash2, X, Send, FileText } from 'lucide-react';
+import { MessageSquare, Check, Trash2, X, Send, FileText, Mic, Paperclip } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';

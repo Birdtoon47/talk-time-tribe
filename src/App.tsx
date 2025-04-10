@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Checkout from "./pages/Checkout";
+import Reviews from "./pages/Reviews";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/reviews" element={<Reviews />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
