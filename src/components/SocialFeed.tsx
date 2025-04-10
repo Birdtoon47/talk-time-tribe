@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -126,16 +125,15 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
       setPosts(mockPosts);
     }
     
-    // Load user posts that should be shown in the feed
+    // Load user posts from all sources to show in feed
     const userPosts = localStorage.getItem('talktribe_posts');
     if (userPosts) {
       const parsedUserPosts = JSON.parse(userPosts);
-      // Filter to exclude posts that have source === 'profile'
-      const feedPosts = parsedUserPosts.filter((post: any) => post.source !== 'profile');
+      // Show all user posts in the feed - no filtering by source
       
-      if (feedPosts.length > 0) {
+      if (parsedUserPosts.length > 0) {
         // Combine with existing feed posts
-        const allPosts = [...feedPosts, ...posts];
+        const allPosts = [...parsedUserPosts, ...posts];
         
         // Sort by timestamp (newest first)
         allPosts.sort((a: any, b: any) => {
@@ -195,7 +193,7 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
       isLiked: false,
       comments: [],
       timestamp: Date.now(),
-      source: 'feed' // Mark this post as created from the feed
+      // No source property means it shows everywhere
     };
     
     setPosts([newPost, ...posts]);
@@ -203,7 +201,7 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
     setPostMedia(null);
     setMediaType(null);
     
-    // Also save to talktribe_posts for consistency
+    // Save to talktribe_posts for consistency 
     const allPosts = localStorage.getItem('talktribe_posts');
     let parsedPosts = allPosts ? JSON.parse(allPosts) : [];
     parsedPosts = [newPost, ...parsedPosts];

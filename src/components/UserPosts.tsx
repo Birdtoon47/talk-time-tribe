@@ -23,7 +23,7 @@ const UserPosts = ({ userData }: UserPostsProps) => {
   useEffect(() => {
     // Load posts from localStorage using safe utility
     const allPosts = safeGetItem('talktribe_posts', []);
-    // Filter to show only the user's posts
+    // Filter to show only the user's posts - don't filter by source
     const userPosts = allPosts.filter((post: any) => post.userId === userData.id);
     setPosts(userPosts);
   }, [userData.id]);
@@ -71,8 +71,8 @@ const UserPosts = ({ userData }: UserPostsProps) => {
       mediaType: mediaType,
       timestamp: new Date().toISOString(),
       likes: 0,
-      comments: [],
-      source: 'profile' // Add a source flag to identify posts created from profile
+      comments: []
+      // No source property means it shows everywhere
     };
     
     // Get existing posts using safe utility
