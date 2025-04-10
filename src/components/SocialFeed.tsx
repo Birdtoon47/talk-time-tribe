@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,9 +52,10 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
     
     // Load posts from localStorage
     const storedPosts = safeGetItem('talktribe_social_feed', []);
+    let combinedPosts = [];
     
     if (storedPosts && storedPosts.length > 0) {
-      setPosts(storedPosts);
+      combinedPosts = [...storedPosts];
     } else {
       // Initialize with mock posts only if nothing in localStorage
       const mockPosts: Post[] = [
@@ -122,24 +124,31 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
       
       // Save mock posts to localStorage
       safeSetItem('talktribe_social_feed', mockPosts);
-      setPosts(mockPosts);
+      combinedPosts = [...mockPosts];
     }
     
     // Load user posts to show in feed
     const userPosts = safeGetItem('talktribe_posts', []);
     if (userPosts && userPosts.length > 0) {
+      // Filter out posts that already exist in the feed (by id)
+      const newUserPosts = userPosts.filter((userPost: any) => 
+        !combinedPosts.some((feedPost: any) => feedPost.id === userPost.id)
+      );
+      
       // Combine with existing feed posts
-      const allPosts = [...userPosts, ...posts];
-      
-      // Sort by timestamp (newest first)
-      allPosts.sort((a: any, b: any) => {
-        const timeA = new Date(a.timestamp).getTime();
-        const timeB = new Date(b.timestamp).getTime();
-        return timeB - timeA;
-      });
-      
-      setPosts(allPosts);
+      if (newUserPosts.length > 0) {
+        combinedPosts = [...newUserPosts, ...combinedPosts];
+      }
     }
+    
+    // Sort by timestamp (newest first)
+    combinedPosts.sort((a: any, b: any) => {
+      const timeA = typeof a.timestamp === 'number' ? a.timestamp : new Date(a.timestamp).getTime();
+      const timeB = typeof b.timestamp === 'number' ? b.timestamp : new Date(b.timestamp).getTime();
+      return timeB - timeA;
+    });
+    
+    setPosts(combinedPosts);
   }, []);
   
   // Save posts to localStorage whenever they change, but not on every render
@@ -197,15 +206,21 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
     setPostMedia(null);
     setMediaType(null);
     
-    // Save to talktribe_posts for consistency across components
-    const allPosts = safeGetItem('talktribe_posts', []);
-    const updatedPosts = [newPost, ...allPosts];
+    // Save to both social feed and user posts
+    const socialFeedPosts = safeGetItem('talktribe_social_feed', []);
+    const updatedSocialFeedPosts = [newPost, ...socialFeedPosts];
     
     // Limit number of saved posts
-    const postsToSave = updatedPosts.slice(0, 30);
-    const success = safeSetItem('talktribe_posts', postsToSave);
+    const socialFeedPostsToSave = updatedSocialFeedPosts.slice(0, 30);
+    const success1 = safeSetItem('talktribe_social_feed', socialFeedPostsToSave);
     
-    if (!success) {
+    // Also save to talktribe_posts for user's profile
+    const userPosts = safeGetItem('talktribe_posts', []);
+    const updatedUserPosts = [newPost, ...userPosts];
+    const userPostsToSave = updatedUserPosts.slice(0, 30);
+    const success2 = safeSetItem('talktribe_posts', userPostsToSave);
+    
+    if (!success1 || !success2) {
       toast.warning('Your post was saved but media might be compressed due to storage limitations');
     } else {
       toast.success('Post created successfully!');
@@ -266,6 +281,8 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
   };
   
   const formatTimestamp = (timestamp: number) => {
+    if (!timestamp) return 'Just now';
+    
     const now = Date.now();
     const diffInSeconds = Math.floor((now - timestamp) / 1000);
     

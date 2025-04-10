@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -28,6 +27,14 @@ const UserPosts = ({ userData }: UserPostsProps) => {
     const allPosts = safeGetItem('talktribe_posts', []);
     // Filter to show only the user's posts
     const userPosts = allPosts.filter((post: any) => post.userId === userData.id);
+    
+    // Sort posts by timestamp (newest first)
+    userPosts.sort((a: any, b: any) => {
+      const timeA = typeof a.timestamp === 'number' ? a.timestamp : new Date(a.timestamp).getTime();
+      const timeB = typeof b.timestamp === 'number' ? b.timestamp : new Date(b.timestamp).getTime();
+      return timeB - timeA;
+    });
+    
     setPosts(userPosts);
   }, [userData.id]);
   
@@ -63,17 +70,19 @@ const UserPosts = ({ userData }: UserPostsProps) => {
     
     setIsSubmitting(true);
     
-    // Create new post object
+    // Create new post object with numeric timestamp
     const newPost = {
       id: Date.now().toString(),
       userId: userData.id,
       userName: userData.name,
       userProfilePic: userData.profilePic,
       text: newPostText,
+      content: newPostText, // Add content field for consistency with SocialFeed
       media: postMedia,
       mediaType: mediaType,
-      timestamp: new Date().toISOString(),
+      timestamp: Date.now(), // Use numeric timestamp
       likes: 0,
+      isLiked: false,
       comments: []
     };
     
@@ -87,9 +96,15 @@ const UserPosts = ({ userData }: UserPostsProps) => {
     const postsToSave = updatedPosts.slice(0, 30);
     
     // Save to localStorage using safe utility
-    const success = safeSetItem('talktribe_posts', postsToSave);
+    const success1 = safeSetItem('talktribe_posts', postsToSave);
     
-    if (!success) {
+    // Also save to social feed
+    const socialFeedPosts = safeGetItem('talktribe_social_feed', []);
+    const updatedSocialFeedPosts = [newPost, ...socialFeedPosts];
+    const socialFeedPostsToSave = updatedSocialFeedPosts.slice(0, 30);
+    const success2 = safeSetItem('talktribe_social_feed', socialFeedPostsToSave);
+    
+    if (!success1 || !success2) {
       toast.warning('Your post was saved but media might be compressed due to storage limitations');
     }
     
@@ -121,8 +136,21 @@ const UserPosts = ({ userData }: UserPostsProps) => {
     toast.success('Post deleted');
   };
   
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (dateString: string | number) => {
+    if (!dateString) return 'Just now';
+    
+    let date: Date;
+    if (typeof dateString === 'number') {
+      date = new Date(dateString);
+    } else {
+      date = new Date(dateString);
+    }
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
