@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 import { createBookingNotification } from '@/utils/notifications';
 import { safeGetItem, safeSetItem } from '@/utils/storage';
 import { toast } from 'sonner';
