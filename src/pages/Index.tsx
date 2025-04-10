@@ -2,12 +2,16 @@
 import { useState, useEffect } from "react";
 import AuthScreen from "@/components/AuthScreen";
 import MainTabs from "@/components/MainTabs";
+import { clearOldPosts } from "@/utils/storage";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Clean up localStorage on app load to prevent quota issues
+    clearOldPosts(30);
+
     // Check if user is stored in localStorage
     const storedUser = localStorage.getItem("talktribe_user");
     if (storedUser) {

@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Heart, MessageCircle, Send, Image as ImageIcon, Video, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { safeGetItem, safeSetItem, clearOldPosts } from '@/utils/storage';
 
 interface SocialFeedProps {
   userData: any;
@@ -24,7 +25,6 @@ interface Post {
   isLiked: boolean;
   comments: Comment[];
   timestamp: number;
-  source?: string;
 }
 
 interface Comment {
@@ -46,11 +46,14 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    // Load posts from localStorage
-    const storedPosts = localStorage.getItem('talktribe_social_feed');
+    // First, clear old posts to ensure we have space
+    clearOldPosts(30);
     
-    if (storedPosts) {
-      setPosts(JSON.parse(storedPosts));
+    // Load posts from localStorage
+    const storedPosts = safeGetItem('talktribe_social_feed', []);
+    
+    if (storedPosts && storedPosts.length > 0) {
+      setPosts(storedPosts);
     } else {
       // Initialize with mock posts only if nothing in localStorage
       const mockPosts: Post[] = [
@@ -72,8 +75,7 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
               timestamp: Date.now() - 3600000
             }
           ],
-          timestamp: Date.now() - 86400000,
-          source: 'feed'
+          timestamp: Date.now() - 86400000
         },
         {
           id: '2',
@@ -86,8 +88,7 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
           likes: 42,
           isLiked: true,
           comments: [],
-          timestamp: Date.now() - 43200000,
-          source: 'feed'
+          timestamp: Date.now() - 43200000
         },
         {
           id: '3',
@@ -115,42 +116,38 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
               timestamp: Date.now() - 900000
             }
           ],
-          timestamp: Date.now() - 21600000,
-          source: 'feed'
+          timestamp: Date.now() - 21600000
         }
       ];
       
       // Save mock posts to localStorage
-      localStorage.setItem('talktribe_social_feed', JSON.stringify(mockPosts));
+      safeSetItem('talktribe_social_feed', mockPosts);
       setPosts(mockPosts);
     }
     
-    // Load user posts from all sources to show in feed
-    const userPosts = localStorage.getItem('talktribe_posts');
-    if (userPosts) {
-      const parsedUserPosts = JSON.parse(userPosts);
-      // Show all user posts in the feed - no filtering by source
+    // Load user posts to show in feed
+    const userPosts = safeGetItem('talktribe_posts', []);
+    if (userPosts && userPosts.length > 0) {
+      // Combine with existing feed posts
+      const allPosts = [...userPosts, ...posts];
       
-      if (parsedUserPosts.length > 0) {
-        // Combine with existing feed posts
-        const allPosts = [...parsedUserPosts, ...posts];
-        
-        // Sort by timestamp (newest first)
-        allPosts.sort((a: any, b: any) => {
-          const timeA = new Date(a.timestamp).getTime();
-          const timeB = new Date(b.timestamp).getTime();
-          return timeB - timeA;
-        });
-        
-        setPosts(allPosts);
-      }
+      // Sort by timestamp (newest first)
+      allPosts.sort((a: any, b: any) => {
+        const timeA = new Date(a.timestamp).getTime();
+        const timeB = new Date(b.timestamp).getTime();
+        return timeB - timeA;
+      });
+      
+      setPosts(allPosts);
     }
   }, []);
   
-  // Save posts to localStorage whenever they change
+  // Save posts to localStorage whenever they change, but not on every render
   useEffect(() => {
     if (posts.length > 0) {
-      localStorage.setItem('talktribe_social_feed', JSON.stringify(posts));
+      // Limit the number of posts before saving to avoid exceeding storage limits
+      const postsToSave = posts.slice(0, 50);
+      safeSetItem('talktribe_social_feed', postsToSave);
     }
   }, [posts]);
   
@@ -158,9 +155,9 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Check file size (limit to 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("File size exceeds 10MB limit");
+      // More strict size limit to prevent storage issues - 2MB max
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("File size exceeds 2MB limit");
         return;
       }
       
@@ -193,7 +190,6 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
       isLiked: false,
       comments: [],
       timestamp: Date.now(),
-      // No source property means it shows everywhere
     };
     
     setPosts([newPost, ...posts]);
@@ -201,13 +197,19 @@ const SocialFeed = ({ userData }: SocialFeedProps) => {
     setPostMedia(null);
     setMediaType(null);
     
-    // Save to talktribe_posts for consistency 
-    const allPosts = localStorage.getItem('talktribe_posts');
-    let parsedPosts = allPosts ? JSON.parse(allPosts) : [];
-    parsedPosts = [newPost, ...parsedPosts];
-    localStorage.setItem('talktribe_posts', JSON.stringify(parsedPosts));
+    // Save to talktribe_posts for consistency across components
+    const allPosts = safeGetItem('talktribe_posts', []);
+    const updatedPosts = [newPost, ...allPosts];
     
-    toast.success('Post created successfully!');
+    // Limit number of saved posts
+    const postsToSave = updatedPosts.slice(0, 30);
+    const success = safeSetItem('talktribe_posts', postsToSave);
+    
+    if (!success) {
+      toast.warning('Your post was saved but media might be compressed due to storage limitations');
+    } else {
+      toast.success('Post created successfully!');
+    }
   };
   
   const handleToggleLike = (postId: string) => {

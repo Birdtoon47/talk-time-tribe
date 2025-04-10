@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Heart, MessageCircle, Share, Image as ImageIcon, Trash2, X, Video } from 'lucide-react';
 import { toast } from 'sonner';
-import { safeGetItem, safeSetItem } from '@/utils/storage';
+import { safeGetItem, safeSetItem, clearOldPosts } from '@/utils/storage';
 
 interface UserPostsProps {
   userData: any;
@@ -21,9 +21,12 @@ const UserPosts = ({ userData }: UserPostsProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
+    // First, clear old posts to ensure we have storage space
+    clearOldPosts(30);
+    
     // Load posts from localStorage using safe utility
     const allPosts = safeGetItem('talktribe_posts', []);
-    // Filter to show only the user's posts - don't filter by source
+    // Filter to show only the user's posts
     const userPosts = allPosts.filter((post: any) => post.userId === userData.id);
     setPosts(userPosts);
   }, [userData.id]);
@@ -32,9 +35,9 @@ const UserPosts = ({ userData }: UserPostsProps) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Check file size - limit to 1MB to avoid localStorage issues
-      if (file.size > 1024 * 1024) {
-        toast.error('File is too large. Please select a file under 1MB.');
+      // Stricter file size limit - 2MB maximum to avoid localStorage issues
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File is too large. Please select a file under 2MB.');
         return;
       }
       
@@ -72,7 +75,6 @@ const UserPosts = ({ userData }: UserPostsProps) => {
       timestamp: new Date().toISOString(),
       likes: 0,
       comments: []
-      // No source property means it shows everywhere
     };
     
     // Get existing posts using safe utility
@@ -81,8 +83,11 @@ const UserPosts = ({ userData }: UserPostsProps) => {
     // Add new post at the beginning
     const updatedPosts = [newPost, ...allPosts];
     
+    // Limit number of posts to save to avoid storage issues
+    const postsToSave = updatedPosts.slice(0, 30);
+    
     // Save to localStorage using safe utility
-    const success = safeSetItem('talktribe_posts', updatedPosts);
+    const success = safeSetItem('talktribe_posts', postsToSave);
     
     if (!success) {
       toast.warning('Your post was saved but media might be compressed due to storage limitations');
