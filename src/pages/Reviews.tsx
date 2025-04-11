@@ -1,120 +1,129 @@
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { safeGetItem, safeSetItem } from '@/utils/storage';
 import ReviewsList from '@/components/reviews/ReviewsList';
 import WriteReviewForm from '@/components/reviews/WriteReviewForm';
-import { safeGetItem } from '@/utils/storage';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Plus, MessageSquare } from 'lucide-react';
 
 const Reviews = () => {
-  const [userData, setUserData] = useState<any>(null);
-  const [creators, setCreators] = useState<any[]>([]);
-  const [selectedCreator, setSelectedCreator] = useState<any>(null);
-  const [showWriteReview, setShowWriteReview] = useState(false);
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [pendingReviews, setPendingReviews] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('received');
   
   useEffect(() => {
-    // Load user data
-    const user = safeGetItem('talktribe_user', null);
-    setUserData(user);
+    // Get user data
+    const storedUser = localStorage.getItem('talktribe_user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
     
-    // Load creators
-    const creatorsList = safeGetItem('talktribe_creators', []);
-    setCreators(creatorsList);
+    // Get reviews
+    const allReviews = safeGetItem('talktribe_reviews', []);
+    setReviews(allReviews);
+    
+    // Get pending reviews (consultations that need reviews)
+    const pendingReviewsList = safeGetItem('talktribe_pending_reviews', []);
+    setPendingReviews(pendingReviewsList);
   }, []);
   
-  const handleReviewSubmitted = () => {
-    setShowWriteReview(false);
+  const handleGoBack = () => {
+    navigate('/');
   };
   
-  if (!userData) {
-    return <div className="p-4">Loading...</div>;
-  }
+  const handleSubmitReview = (review: any) => {
+    // Add the new review to the list
+    const updatedReviews = [...reviews, review];
+    safeSetItem('talktribe_reviews', updatedReviews);
+    setReviews(updatedReviews);
+    
+    // Remove from pending reviews
+    const updatedPending = pendingReviews.filter(
+      pending => pending.id !== review.consultationId
+    );
+    safeSetItem('talktribe_pending_reviews', updatedPending);
+    setPendingReviews(updatedPending);
+  };
+  
+  // Filter reviews based on the active tab
+  const receivedReviews = user ? reviews.filter(
+    (review) => review.receiverId === user.id
+  ) : [];
+  
+  const givenReviews = user ? reviews.filter(
+    (review) => review.reviewerId === user.id
+  ) : [];
   
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Reviews & Testimonials</h1>
+    <div className="container mx-auto max-w-4xl">
+      <div className="flex items-center p-4 border-b">
+        <Button variant="ghost" size="icon" onClick={handleGoBack} className="mr-2">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-xl font-bold">Reviews</h1>
+      </div>
       
-      <Tabs defaultValue="all" className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">All Reviews</TabsTrigger>
-          <TabsTrigger value="my-reviews">My Reviews</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="all" className="mt-4">
-          <ReviewsList userData={userData} />
-        </TabsContent>
-        
-        <TabsContent value="my-reviews" className="mt-4">
-          <div className="mb-4 flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Reviews You've Written</h2>
-            <Button 
-              onClick={() => setShowWriteReview(true)}
-              className="flex items-center"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Write a Review
-            </Button>
-          </div>
+      <div className="p-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="received">Received</TabsTrigger>
+            <TabsTrigger value="given">Given</TabsTrigger>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+          </TabsList>
           
-          {showWriteReview && (
-            <Card className="mb-6">
-              <div className="p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-medium">Select a Creator to Review</h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setShowWriteReview(false)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {creators.map(creator => (
-                    <Card 
-                      key={creator.id}
-                      className={`p-3 cursor-pointer hover:border-app-purple transition-colors ${
-                        selectedCreator?.id === creator.id ? 'border-app-purple bg-app-purple/5' : ''
-                      }`}
-                      onClick={() => setSelectedCreator(creator)}
-                    >
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full overflow-hidden mr-3">
-                          <img src={creator.profilePic} alt={creator.name} className="h-full w-full object-cover" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{creator.name}</p>
-                          <p className="text-xs text-gray-500">{creator.expertise}</p>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-                
-                {selectedCreator && (
-                  <div className="mt-4">
-                    <WriteReviewForm 
-                      creatorId={selectedCreator.id}
-                      creatorName={selectedCreator.name}
-                      userData={userData}
-                      onReviewSubmitted={handleReviewSubmitted}
-                    />
-                  </div>
+          <TabsContent value="received">
+            {receivedReviews.length > 0 ? (
+              <ReviewsList reviews={receivedReviews} />
+            ) : (
+              <Card className="p-6 text-center">
+                <p className="text-gray-500">You haven't received any reviews yet.</p>
+                {user?.isCreator && (
+                  <p className="text-sm text-gray-400 mt-2">
+                    Complete consultations with clients to receive reviews.
+                  </p>
                 )}
-              </div>
-            </Card>
-          )}
+              </Card>
+            )}
+          </TabsContent>
           
-          <ReviewsList 
-            userData={userData} 
-            creatorId={userData.id} // Show only reviews by this user
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="given">
+            {givenReviews.length > 0 ? (
+              <ReviewsList reviews={givenReviews} />
+            ) : (
+              <Card className="p-6 text-center">
+                <p className="text-gray-500">You haven't given any reviews yet.</p>
+              </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="pending">
+            {pendingReviews.length > 0 ? (
+              <div className="space-y-4">
+                {pendingReviews.map((pending) => (
+                  <WriteReviewForm
+                    key={pending.id}
+                    consultation={pending}
+                    onSubmitReview={handleSubmitReview}
+                    userData={user}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="p-6 text-center">
+                <p className="text-gray-500">No pending reviews to write.</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Completed consultations will appear here for you to review.
+                </p>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

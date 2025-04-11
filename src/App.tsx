@@ -9,6 +9,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Checkout from "./pages/Checkout";
 import Reviews from "./pages/Reviews";
+import Creators from "./pages/Creators";
+import CreatorProfile from "./pages/CreatorProfile";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,8 @@ const App = () => {
             <Route path="/" element={<Index />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/reviews" element={<Reviews />} />
+            <Route path="/creators" element={<Creators />} />
+            <Route path="/creator-profile" element={<CreatorProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

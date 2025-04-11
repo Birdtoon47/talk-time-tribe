@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Edit, Star, DollarSign, Clock, Users, Calendar, Video, MessageSquare, Trash2 } from 'lucide-react';
+import { Edit, Star, DollarSign, Clock, Users, Calendar, Video, MessageSquare, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import AvatarUpload from './AvatarUpload';
 import UserPosts from './UserPosts';
@@ -44,6 +45,8 @@ const CreatorProfile = ({
     price: userData.ratePerMinute ? userData.ratePerMinute * 30 : 150000
   });
   const [services, setServices] = useState<any[]>([]);
+  const [isAddBalanceOpen, setIsAddBalanceOpen] = useState(false);
+  const [amountToAdd, setAmountToAdd] = useState(100000);
   
   useEffect(() => {
     // Load creator services
@@ -96,8 +99,41 @@ const CreatorProfile = ({
       return;
     }
     
+    // Calculate platform fee (10%)
+    const platformFee = Math.round(userData.balance * 0.1);
+    const withdrawAmount = userData.balance - platformFee;
+    
     // In a real app, this would call an API to process the withdrawal
-    toast.success('Withdrawal request submitted!');
+    const updatedUserData = {
+      ...userData,
+      balance: 0,
+      totalWithdrawn: (userData.totalWithdrawn || 0) + withdrawAmount
+    };
+    
+    localStorage.setItem('talktribe_user', JSON.stringify(updatedUserData));
+    
+    if (onUpdateUserData) {
+      onUpdateUserData(updatedUserData);
+    }
+    
+    toast.success(`Withdrawal of ${formatCurrency(withdrawAmount)} processed! (${formatCurrency(platformFee)} platform fee applied)`);
+  };
+  
+  const handleAddBalance = () => {
+    // For testing purposes - adds balance to the user account
+    const updatedUserData = {
+      ...userData,
+      balance: (userData.balance || 0) + amountToAdd
+    };
+    
+    localStorage.setItem('talktribe_user', JSON.stringify(updatedUserData));
+    
+    if (onUpdateUserData) {
+      onUpdateUserData(updatedUserData);
+    }
+    
+    setIsAddBalanceOpen(false);
+    toast.success(`Added ${formatCurrency(amountToAdd)} to your balance`);
   };
   
   const handleCreateService = () => {
@@ -312,15 +348,34 @@ const CreatorProfile = ({
                       <div>
                         <p className="text-gray-600 text-sm">Current Balance</p>
                         <p className="font-bold text-xl">{formatCurrency(userData.balance || 0)}</p>
+                        {userData.totalWithdrawn > 0 && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Total withdrawn: {formatCurrency(userData.totalWithdrawn)}
+                          </p>
+                        )}
                       </div>
                       
-                      <Button 
-                        onClick={handleWithdraw}
-                        disabled={userData.balance < 50000}
-                        className="bg-app-green"
-                      >
-                        Withdraw
-                      </Button>
+                      <div className="flex flex-col space-y-2">
+                        <Button 
+                          onClick={handleWithdraw}
+                          disabled={userData.balance < 50000}
+                          className="bg-app-green"
+                        >
+                          Withdraw
+                        </Button>
+                        
+                        {isOwnProfile && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setIsAddBalanceOpen(true)}
+                            className="text-xs"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add Balance (Test)
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     
                     {userData.balance < 50000 && (
@@ -328,6 +383,10 @@ const CreatorProfile = ({
                         You need at least {formatCurrency(50000)} to withdraw
                       </p>
                     )}
+                    
+                    <div className="mt-3 text-xs text-gray-500 p-2 bg-gray-100 rounded-md">
+                      <p>Note: A 10% platform fee is applied to all withdrawals.</p>
+                    </div>
                   </Card>
                 </div>
               )}
@@ -551,6 +610,44 @@ const CreatorProfile = ({
               disabled={!newService.title || !newService.description}
             >
               Create Service
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isAddBalanceOpen} onOpenChange={setIsAddBalanceOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Balance (For Testing)</DialogTitle>
+            <DialogDescription>
+              Add funds to your creator balance for testing withdrawal functionality.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount to Add</Label>
+              <Input 
+                id="amount" 
+                type="number"
+                value={amountToAdd}
+                onChange={(e) => setAmountToAdd(parseInt(e.target.value))}
+              />
+              <p className="text-xs text-gray-500">
+                This will add {formatCurrency(amountToAdd)} to your balance
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button 
+              className="bg-app-green" 
+              onClick={handleAddBalance}
+            >
+              Add Balance
             </Button>
           </DialogFooter>
         </DialogContent>
