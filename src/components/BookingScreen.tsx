@@ -17,8 +17,9 @@ import { formatCurrency } from '@/utils/formatters';
 
 interface BookingScreenProps {
   userData: any;
-  creators: any[];
+  creators?: any[];
   selectedCreator?: any;
+  onClose?: () => void; // Added onClose prop to the interface
 }
 
 interface Booking {
@@ -36,7 +37,7 @@ interface Booking {
   creatorProfilePic: string;
 }
 
-const BookingScreen = ({ userData, creators = [], selectedCreator: initialSelectedCreator }: BookingScreenProps) => {
+const BookingScreen = ({ userData, creators = [], selectedCreator: initialSelectedCreator, onClose }: BookingScreenProps) => {
   const [availableCreators] = useState(creators || []);
   const [selectedCreator, setSelectedCreator] = useState(initialSelectedCreator);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -65,12 +66,16 @@ const BookingScreen = ({ userData, creators = [], selectedCreator: initialSelect
     
     // Reset state when booking is completed
     const handleBookingCompleted = () => {
-      setSelectedCreator(null);
-      setSelectedDate(null);
-      setSelectedTime(null);
-      setSelectedDuration(null);
-      setConsultationType('video');
-      setActiveTab('date');
+      if (onClose) {
+        onClose();
+      } else {
+        setSelectedCreator(null);
+        setSelectedDate(null);
+        setSelectedTime(null);
+        setSelectedDuration(null);
+        setConsultationType('video');
+        setActiveTab('date');
+      }
     };
     
     window.addEventListener('booking-completed' as any, handleBookingCompleted);
@@ -79,7 +84,7 @@ const BookingScreen = ({ userData, creators = [], selectedCreator: initialSelect
       window.removeEventListener('select-creator' as any, handleSelectCreator as any);
       window.removeEventListener('booking-completed' as any, handleBookingCompleted);
     };
-  }, []);
+  }, [onClose]);
 
   const handleBookConsultation = () => {
     if (!selectedCreator || !selectedDate || !selectedTime || !selectedDuration) {
@@ -239,7 +244,13 @@ const BookingScreen = ({ userData, creators = [], selectedCreator: initialSelect
     <div className="p-4">
       <BookingHeader 
         selectedCreator={selectedCreator}
-        onBack={() => window.dispatchEvent(new CustomEvent('booking-completed'))}
+        onBack={() => {
+          if (onClose) {
+            onClose();
+          } else {
+            window.dispatchEvent(new CustomEvent('booking-completed'));
+          }
+        }}
         formatCurrency={formatCurrencyWithUserCode}
         title=""
         onToggleMyBookings={toggleMyBookings}

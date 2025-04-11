@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,16 +27,17 @@ interface Review {
 
 interface ReviewsListProps {
   creatorId?: string; // If provided, only shows reviews for a specific creator
-  userData: any;
+  userData?: any;
+  reviewsList?: Review[]; // Added reviewsList to the interface
 }
 
-const ReviewsList = ({ creatorId, userData }: ReviewsListProps) => {
+const ReviewsList = ({ creatorId, userData, reviewsList }: ReviewsListProps) => {
   const [activeTab, setActiveTab] = useState('all');
   const [filterRating, setFilterRating] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   
-  // Load reviews from localStorage (or could be fetched from an API)
-  const allReviews = safeGetItem<Review[]>('talktribe_reviews', []);
+  // Load reviews from localStorage (or could be fetched from an API) if not provided
+  const allReviews = reviewsList || safeGetItem<Review[]>('talktribe_reviews', []);
   
   // Filter reviews based on tab and creatorId if provided
   const filteredReviews = allReviews.filter(review => {

@@ -1,4 +1,3 @@
-
 import { useState, ChangeEvent } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,13 +10,22 @@ import { safeGetItem, safeSetItem } from '@/utils/storage';
 import { toast } from 'sonner';
 
 interface WriteReviewFormProps {
-  creatorId: string;
-  creatorName: string;
+  creatorId?: string;
+  creatorName?: string;
   userData: any;
-  onReviewSubmitted: () => void;
+  onReviewSubmitted?: () => void;
+  consultationData?: any; // Added consultationData to the interface
+  onSubmitReview?: (review: any) => void; // Added onSubmitReview to the interface
 }
 
-const WriteReviewForm = ({ creatorId, creatorName, userData, onReviewSubmitted }: WriteReviewFormProps) => {
+const WriteReviewForm = ({ 
+  creatorId, 
+  creatorName, 
+  userData, 
+  onReviewSubmitted,
+  consultationData,
+  onSubmitReview
+}: WriteReviewFormProps) => {
   const [rating, setRating] = useState(5);
   const [content, setContent] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
@@ -25,6 +33,10 @@ const WriteReviewForm = ({ creatorId, creatorName, userData, onReviewSubmitted }
   const [beforeImage, setBeforeImage] = useState('');
   const [afterImage, setAfterImage] = useState('');
   const [description, setDescription] = useState('');
+  
+  // Use creator information from consultationData if available
+  const effectiveCreatorId = creatorId || (consultationData ? consultationData.creatorId : '');
+  const effectiveCreatorName = creatorName || (consultationData ? consultationData.creatorName : 'Creator');
   
   const handleStarClick = (selectedRating: number) => {
     setRating(selectedRating);
@@ -63,12 +75,13 @@ const WriteReviewForm = ({ creatorId, creatorName, userData, onReviewSubmitted }
       userId: userData.id,
       userName: userData.name,
       userProfilePic: userData.profilePic,
-      creatorId,
+      creatorId: effectiveCreatorId,
       rating,
       content,
       helpfulCount: 0,
       timestamp: Date.now(),
       isSuccess,
+      ...(consultationData && { consultationId: consultationData.id }),
       ...(hasBeforeAfter && {
         beforeAfter: {
           before: beforeImage,
@@ -78,12 +91,17 @@ const WriteReviewForm = ({ creatorId, creatorName, userData, onReviewSubmitted }
       })
     };
     
-    // Get existing reviews and add the new one
-    const existingReviews = safeGetItem<any[]>('talktribe_reviews', []);
-    safeSetItem('talktribe_reviews', [...existingReviews, newReview]);
-    
-    // Show success message
-    toast.success('Review submitted successfully');
+    // If onSubmitReview prop is provided, use it, otherwise save directly
+    if (onSubmitReview) {
+      onSubmitReview(newReview);
+    } else {
+      // Get existing reviews and add the new one
+      const existingReviews = safeGetItem<any[]>('talktribe_reviews', []);
+      safeSetItem('talktribe_reviews', [...existingReviews, newReview]);
+      
+      // Show success message
+      toast.success('Review submitted successfully');
+    }
     
     // Reset form
     setContent('');
@@ -94,13 +112,15 @@ const WriteReviewForm = ({ creatorId, creatorName, userData, onReviewSubmitted }
     setAfterImage('');
     setDescription('');
     
-    // Call callback
-    onReviewSubmitted();
+    // Call callback if provided
+    if (onReviewSubmitted) {
+      onReviewSubmitted();
+    }
   };
 
   return (
     <Card className="p-4">
-      <h3 className="text-lg font-semibold mb-4">Write a Review for {creatorName}</h3>
+      <h3 className="text-lg font-semibold mb-4">Write a Review for {effectiveCreatorName}</h3>
       
       <div className="mb-4">
         <Label className="block mb-2">Rating</Label>
