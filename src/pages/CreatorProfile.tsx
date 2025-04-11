@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import BookingScreen from '@/components/BookingScreen';
+import { safeGetItem, safeSetItem } from '@/utils/storage';
 
 const CreatorProfilePage = () => {
   const navigate = useNavigate();
@@ -21,13 +22,20 @@ const CreatorProfilePage = () => {
       return;
     }
     
-    setCreator(JSON.parse(selectedCreator));
+    const creatorData = JSON.parse(selectedCreator);
     
     // Get current user
     const storedUser = localStorage.getItem('talktribe_user');
+    let userData = null;
+    
     if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
+      userData = JSON.parse(storedUser);
+      // Add current user ID to the creator data for the follow button
+      creatorData.currentUserId = userData.id;
+      setCurrentUser(userData);
     }
+    
+    setCreator(creatorData);
   }, [navigate]);
   
   const handleBookConsultation = (creatorData: any) => {

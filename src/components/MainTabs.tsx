@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
-import { Home, Calendar, User, MessageSquare, PlusCircle } from 'lucide-react';
+import { Home, Calendar, User, MessageSquare, PlusCircle, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import SocialFeed from './SocialFeed';
 import BookingScreen from './BookingScreen';
@@ -24,6 +24,7 @@ interface MainTabsProps {
 }
 
 const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('feed');
   const [creators, setCreators] = useState<any[]>([]);
   const [selectedCreator, setSelectedCreator] = useState<any>(null);
@@ -254,6 +255,16 @@ const MainTabs = ({ userData, onLogout, onUpdateUserData }: MainTabsProps) => {
         <h1 className="text-xl font-bold text-app-purple">TalkTimeTribe</h1>
         
         <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate('/creators')} 
+            className="flex items-center gap-1"
+          >
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Creators</span>
+          </Button>
+          
           <SearchBar 
             creators={creators} 
             onSelectCreator={handleSelectCreator} 

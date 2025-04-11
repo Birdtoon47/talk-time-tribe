@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { safeGetItem, safeSetItem } from '@/utils/storage';
+import { v4 as uuidv4 } from 'uuid';
 import UserPosts from './UserPosts';
 import ProfileHeader from './creator-profile/ProfileHeader';
 import ProfileInfoCard from './creator-profile/ProfileInfoCard';
@@ -101,13 +102,53 @@ const CreatorProfile = ({
       totalWithdrawn: (userData.totalWithdrawn || 0) + withdrawAmount
     };
     
+    // Create a new withdrawal record
+    const withdrawal = {
+      id: uuidv4(),
+      userId: userData.id,
+      amount: withdrawAmount,
+      fee: platformFee,
+      status: 'pending' as const,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      estimatedCompletionDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days from now
+    };
+    
+    // Save the withdrawal record
+    const withdrawals = safeGetItem(`talktribe_withdrawals_${userData.id}`, []);
+    safeSetItem(`talktribe_withdrawals_${userData.id}`, [withdrawal, ...withdrawals]);
+    
+    // Update the user data
     localStorage.setItem('talktribe_user', JSON.stringify(updatedUserData));
     
     if (onUpdateUserData) {
       onUpdateUserData(updatedUserData);
     }
     
-    toast.success(`Withdrawal of ${formatCurrency(withdrawAmount, userData.currencyCode)} processed! (${formatCurrency(platformFee, userData.currencyCode)} platform fee applied)`);
+    // Simulate changing status after some time (for testing)
+    setTimeout(() => {
+      const withdrawals = safeGetItem(`talktribe_withdrawals_${userData.id}`, []);
+      const updatedWithdrawals = withdrawals.map((w: any) => {
+        if (w.id === withdrawal.id) {
+          return { ...w, status: 'processing', updatedAt: new Date().toISOString() };
+        }
+        return w;
+      });
+      safeSetItem(`talktribe_withdrawals_${userData.id}`, updatedWithdrawals);
+    }, 10000); // After 10 seconds
+    
+    setTimeout(() => {
+      const withdrawals = safeGetItem(`talktribe_withdrawals_${userData.id}`, []);
+      const updatedWithdrawals = withdrawals.map((w: any) => {
+        if (w.id === withdrawal.id) {
+          return { ...w, status: 'completed', updatedAt: new Date().toISOString() };
+        }
+        return w;
+      });
+      safeSetItem(`talktribe_withdrawals_${userData.id}`, updatedWithdrawals);
+    }, 20000); // After 20 seconds
+    
+    toast.success(`Withdrawal of ${formatCurrency(withdrawAmount, userData.currencyCode)} initiated! (${formatCurrency(platformFee, userData.currencyCode)} platform fee applied)`);
   };
   
   const handleAddBalance = () => {
@@ -152,15 +193,12 @@ const CreatorProfile = ({
         handleAvatarChange={handleAvatarChange}
       />
       
-      {/* Always render the Tabs component regardless of isOwnProfile */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        {isOwnProfile && (
-          <TabsList className="grid grid-cols-3">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="services">Services</TabsTrigger>
-            <TabsTrigger value="posts">Your Posts</TabsTrigger>
-          </TabsList>
-        )}
+        <TabsList className="grid grid-cols-3">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="services">Services</TabsTrigger>
+          <TabsTrigger value="posts">Posts</TabsTrigger>
+        </TabsList>
         
         <TabsContent value="profile">
           <ProfileInfoCard 

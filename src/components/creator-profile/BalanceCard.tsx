@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import WithdrawalStatus from './WithdrawalStatus';
 
 interface BalanceCardProps {
   userData: any;
@@ -33,7 +34,17 @@ const BalanceCard = ({
   return (
     <>
       <div className="mt-6">
-        <h4 className="font-medium text-gray-700 mb-2">Earnings</h4>
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="font-medium text-gray-700">Earnings</h4>
+          
+          {isOwnProfile && userData.id && (
+            <WithdrawalStatus 
+              userId={userData.id} 
+              formatCurrency={formatCurrency}
+              currencyCode={userData.currencyCode}
+            />
+          )}
+        </div>
         
         <Card className="p-4 bg-gray-50">
           <div className="flex justify-between items-center">
