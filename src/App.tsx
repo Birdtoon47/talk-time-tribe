@@ -48,6 +48,7 @@ const App = () => {
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/creators" element={<Creators />} />
             <Route path="/creator-profile" element={<CreatorProfile />} />
+            <Route path="/bookings" element={<Index />} /> {/* Redirect to Index since we're integrating it */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

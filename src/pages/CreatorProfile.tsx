@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CreatorProfileComponent from '@/components/CreatorProfile';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Share2 } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import BookingScreen from '@/components/BookingScreen';
-import { safeGetItem, safeSetItem } from '@/utils/storage';
+import { safeGetItem } from '@/utils/storage';
+import PageHeader from '@/components/navigation/PageHeader';
+import BottomNav from '@/components/navigation/BottomNav';
 
 const CreatorProfilePage = () => {
   const navigate = useNavigate();
@@ -73,36 +74,29 @@ const CreatorProfilePage = () => {
   }
   
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto pb-20">
       {showBooking ? (
-        <BookingScreen 
-          selectedCreator={creator}
-          userData={currentUser}
-          onClose={() => setShowBooking(false)}
-        />
+        <>
+          <PageHeader 
+            title="Book Consultation" 
+            onShare={handleShare}
+            showShare={true}
+          />
+          <BookingScreen 
+            selectedCreator={creator}
+            userData={currentUser}
+            onClose={() => setShowBooking(false)}
+          />
+        </>
       ) : (
         <>
-          <div className="flex items-center justify-between p-4 border-b">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/creators')}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            
-            <h1 className="text-xl font-bold">Creator Profile</h1>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleShare}
-            >
-              <Share2 className="h-5 w-5" />
-            </Button>
-          </div>
+          <PageHeader 
+            title="Creator Profile" 
+            onShare={handleShare}
+            showShare={true}
+          />
           
-          <div className="overflow-y-auto h-[calc(100vh-64px)]">
+          <div className="overflow-y-auto">
             <CreatorProfileComponent 
               userData={creator}
               isOwnProfile={creator.id === currentUser?.id}
@@ -111,6 +105,8 @@ const CreatorProfilePage = () => {
           </div>
         </>
       )}
+      
+      <BottomNav />
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { safeGetItem } from '@/utils/storage';
+import PageHeader from '@/components/navigation/PageHeader';
+import BottomNav from '@/components/navigation/BottomNav';
+import { formatCurrency } from '@/utils/formatters';
 
 const Creators = () => {
   const navigate = useNavigate();
@@ -192,162 +194,159 @@ const Creators = () => {
     return sampleProfiles;
   };
   
-  const formatCurrency = (amount: number) => {
-    // Simplified for demo, assuming IDR
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
   
+
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
-      <h1 className="text-2xl font-bold mb-6">Find Expert Consultants</h1>
+    <div className="container mx-auto pb-20">
+      <PageHeader title="Find Expert Consultants" showBackButton={false} />
       
-      <div className="flex flex-col space-y-4 mb-6">
-        <div className="flex space-x-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name, specialty, or keywords..."
-              className="pl-10"
-            />
+      <div className="p-4">
+        <div className="flex flex-col space-y-4 mb-6">
+          <div className="flex space-x-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by name, specialty, or keywords..."
+                className="pl-10"
+              />
+            </div>
+            
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={() => setShowFilters(!showFilters)}
+              className={showFilters ? "bg-gray-100" : ""}
+            >
+              <Filter size={18} />
+            </Button>
           </div>
           
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => setShowFilters(!showFilters)}
-            className={showFilters ? "bg-gray-100" : ""}
-          >
-            <Filter size={18} />
-          </Button>
-        </div>
-        
-        {showFilters && (
-          <Card className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Price Range (per minute)</label>
-                <Slider
-                  defaultValue={[0, 50000]}
-                  max={50000}
-                  step={1000}
-                  onValueChange={(value) => setFilters({...filters, priceRange: value})}
-                />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>{formatCurrency(filters.priceRange[0])}</span>
-                  <span>{formatCurrency(filters.priceRange[1])}</span>
+          {showFilters && (
+            <Card className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Price Range (per minute)</label>
+                  <Slider
+                    defaultValue={[0, 50000]}
+                    max={50000}
+                    step={1000}
+                    onValueChange={(value) => setFilters({...filters, priceRange: value})}
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>{formatCurrency(filters.priceRange[0])}</span>
+                    <span>{formatCurrency(filters.priceRange[1])}</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Consultation Type</label>
+                  <Select
+                    defaultValue="all"
+                    onValueChange={(value) => setFilters({...filters, consultationType: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="video">Video</SelectItem>
+                      <SelectItem value="audio">Audio</SelectItem>
+                      <SelectItem value="text">Text Chat</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Minimum Rating</label>
+                  <Select 
+                    defaultValue="0"
+                    onValueChange={(value) => setFilters({...filters, rating: parseFloat(value)})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any Rating" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Any Rating</SelectItem>
+                      <SelectItem value="3">3+ Stars</SelectItem>
+                      <SelectItem value="4">4+ Stars</SelectItem>
+                      <SelectItem value="4.5">4.5+ Stars</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Consultation Type</label>
+              <div className="flex justify-between mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setFilters({
+                      priceRange: [0, 50000],
+                      consultationType: 'all',
+                      rating: 0,
+                      availability: 'all'
+                    });
+                    setSearchTerm('');
+                  }}
+                >
+                  Reset Filters
+                </Button>
+                
                 <Select
-                  defaultValue="all"
-                  onValueChange={(value) => setFilters({...filters, consultationType: value})}
+                  defaultValue="popular"
+                  onValueChange={setSortBy}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="All Types" />
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Sort by Popular" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="video">Video</SelectItem>
-                    <SelectItem value="audio">Audio</SelectItem>
-                    <SelectItem value="text">Text Chat</SelectItem>
+                    <SelectItem value="popular">Sort by Popular</SelectItem>
+                    <SelectItem value="price-low">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    <SelectItem value="rating">Highest Rated</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Minimum Rating</label>
-                <Select 
-                  defaultValue="0"
-                  onValueChange={(value) => setFilters({...filters, rating: parseFloat(value)})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Any Rating" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">Any Rating</SelectItem>
-                    <SelectItem value="3">3+ Stars</SelectItem>
-                    <SelectItem value="4">4+ Stars</SelectItem>
-                    <SelectItem value="4.5">4.5+ Stars</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="flex justify-between mt-4">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  setFilters({
-                    priceRange: [0, 50000],
-                    consultationType: 'all',
-                    rating: 0,
-                    availability: 'all'
-                  });
-                  setSearchTerm('');
-                }}
-              >
-                Reset Filters
-              </Button>
-              
-              <Select
-                defaultValue="popular"
-                onValueChange={setSortBy}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort by Popular" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="popular">Sort by Popular</SelectItem>
-                  <SelectItem value="price-low">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  <SelectItem value="rating">Highest Rated</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </Card>
-        )}
-      </div>
-      
-      <Tabs defaultValue="all" value={currentTab} onValueChange={setCurrentTab} className="mb-6">
-        <TabsList className="flex overflow-x-auto pb-2 mb-2 space-x-2">
-          <TabsTrigger value="all">All Categories</TabsTrigger>
-          <TabsTrigger value="Business">Business</TabsTrigger>
-          <TabsTrigger value="Technology">Technology</TabsTrigger>
-          <TabsTrigger value="Health">Health</TabsTrigger>
-          <TabsTrigger value="Finance">Finance</TabsTrigger>
-          <TabsTrigger value="Career">Career</TabsTrigger>
-          <TabsTrigger value="Education">Education</TabsTrigger>
-          <TabsTrigger value="Relationships">Relationships</TabsTrigger>
-          <TabsTrigger value="Art">Art</TabsTrigger>
-        </TabsList>
+            </Card>
+          )}
+        </div>
         
-        <TabsContent value="all" className="mt-4">
-          <CreatorsList 
-            creators={filteredCreators} 
-            formatCurrency={formatCurrency}
-            onViewProfile={handleViewProfile}
-          />
-        </TabsContent>
-        
-        {['Business', 'Technology', 'Health', 'Finance', 'Career', 'Education', 'Relationships', 'Art'].map(category => (
-          <TabsContent key={category} value={category} className="mt-4">
+        <Tabs defaultValue="all" value={currentTab} onValueChange={setCurrentTab} className="mb-6">
+          <TabsList className="flex overflow-x-auto pb-2 mb-2 space-x-2">
+            <TabsTrigger value="all">All Categories</TabsTrigger>
+            <TabsTrigger value="Business">Business</TabsTrigger>
+            <TabsTrigger value="Technology">Technology</TabsTrigger>
+            <TabsTrigger value="Health">Health</TabsTrigger>
+            <TabsTrigger value="Finance">Finance</TabsTrigger>
+            <TabsTrigger value="Career">Career</TabsTrigger>
+            <TabsTrigger value="Education">Education</TabsTrigger>
+            <TabsTrigger value="Relationships">Relationships</TabsTrigger>
+            <TabsTrigger value="Art">Art</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="all" className="mt-4">
             <CreatorsList 
               creators={filteredCreators} 
               formatCurrency={formatCurrency}
               onViewProfile={handleViewProfile}
             />
           </TabsContent>
-        ))}
-      </Tabs>
+          
+          {['Business', 'Technology', 'Health', 'Finance', 'Career', 'Education', 'Relationships', 'Art'].map(category => (
+            <TabsContent key={category} value={category} className="mt-4">
+              <CreatorsList 
+                creators={filteredCreators} 
+                formatCurrency={formatCurrency}
+                onViewProfile={handleViewProfile}
+              />
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
+      
+      <BottomNav />
     </div>
   );
 };

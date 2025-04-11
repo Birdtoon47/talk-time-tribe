@@ -1,16 +1,14 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { safeGetItem, safeSetItem } from '@/utils/storage';
 import ReviewsList from '@/components/reviews/ReviewsList';
 import WriteReviewForm from '@/components/reviews/WriteReviewForm';
+import PageHeader from '@/components/navigation/PageHeader';
+import BottomNav from '@/components/navigation/BottomNav';
 
 const Reviews = () => {
-  const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [pendingReviews, setPendingReviews] = useState<any[]>([]);
@@ -31,10 +29,6 @@ const Reviews = () => {
     const pendingReviewsList = safeGetItem('talktribe_pending_reviews', []);
     setPendingReviews(pendingReviewsList);
   }, []);
-  
-  const handleGoBack = () => {
-    navigate('/');
-  };
   
   const handleSubmitReview = (review: any) => {
     // Add the new review to the list
@@ -60,13 +54,8 @@ const Reviews = () => {
   ) : [];
   
   return (
-    <div className="container mx-auto max-w-4xl">
-      <div className="flex items-center p-4 border-b">
-        <Button variant="ghost" size="icon" onClick={handleGoBack} className="mr-2">
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-bold">Reviews</h1>
-      </div>
+    <div className="container mx-auto max-w-4xl pb-20">
+      <PageHeader title="Reviews" showBackButton={false} />
       
       <div className="p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -124,6 +113,8 @@ const Reviews = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      <BottomNav />
     </div>
   );
 };
