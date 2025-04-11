@@ -7,6 +7,12 @@ import { ArrowLeft, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import BookingScreen from '@/components/BookingScreen';
 
+interface BookingScreenProps {
+  selectedCreator: any;
+  userData: any;
+  onClose: () => void;
+}
+
 const CreatorProfilePage = () => {
   const navigate = useNavigate();
   const [creator, setCreator] = useState<any>(null);
@@ -69,8 +75,8 @@ const CreatorProfilePage = () => {
       {showBooking ? (
         <BookingScreen 
           selectedCreator={creator}
-          onClose={() => setShowBooking(false)}
           userData={currentUser}
+          onClose={() => setShowBooking(false)}
         />
       ) : (
         <>

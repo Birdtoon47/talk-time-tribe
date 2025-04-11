@@ -9,6 +9,16 @@ import { safeGetItem, safeSetItem } from '@/utils/storage';
 import ReviewsList from '@/components/reviews/ReviewsList';
 import WriteReviewForm from '@/components/reviews/WriteReviewForm';
 
+interface ReviewsListProps {
+  reviewsList: any[];
+}
+
+interface WriteReviewFormProps {
+  consultationData: any;
+  onSubmitReview: (review: any) => void;
+  userData: any;
+}
+
 const Reviews = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
@@ -78,7 +88,7 @@ const Reviews = () => {
           
           <TabsContent value="received">
             {receivedReviews.length > 0 ? (
-              <ReviewsList reviews={receivedReviews} />
+              <ReviewsList reviewsList={receivedReviews} />
             ) : (
               <Card className="p-6 text-center">
                 <p className="text-gray-500">You haven't received any reviews yet.</p>
@@ -93,7 +103,7 @@ const Reviews = () => {
           
           <TabsContent value="given">
             {givenReviews.length > 0 ? (
-              <ReviewsList reviews={givenReviews} />
+              <ReviewsList reviewsList={givenReviews} />
             ) : (
               <Card className="p-6 text-center">
                 <p className="text-gray-500">You haven't given any reviews yet.</p>
@@ -107,7 +117,7 @@ const Reviews = () => {
                 {pendingReviews.map((pending) => (
                   <WriteReviewForm
                     key={pending.id}
-                    consultation={pending}
+                    consultationData={pending}
                     onSubmitReview={handleSubmitReview}
                     userData={user}
                   />
