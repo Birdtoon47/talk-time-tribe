@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Table, 
@@ -10,10 +11,34 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, CreditCard, Plus } from "lucide-react";
-import { useState } from "react";
+import { Search, CreditCard } from "lucide-react";
+import { safeGetItem, safeSetItem } from "@/utils/storage";
+import { v4 as uuidv4 } from "uuid";
+import AddPaymentMethodModal from "./AddPaymentMethodModal";
+import PaymentDetailsModal from "./PaymentDetailsModal";
 
-const PAYMENTS_DATA = [
+// Define Payment type
+interface Payment {
+  id: string;
+  date: string;
+  amount: number;
+  status: string;
+  method: string;
+  customer: string;
+}
+
+// Define PaymentMethod type
+interface PaymentMethod {
+  id: string;
+  name: string;
+  processingFee: string;
+  isDefault: boolean;
+  isEnabled: boolean;
+  dateAdded: string;
+}
+
+// Initial payments data
+const INITIAL_PAYMENTS_DATA: Payment[] = [
   {
     id: "INV-001",
     date: "2023-09-01",
@@ -56,20 +81,108 @@ const PAYMENTS_DATA = [
   },
 ];
 
+// Initial payment methods
+const INITIAL_PAYMENT_METHODS: PaymentMethod[] = [
+  {
+    id: "pm-1",
+    name: "Credit Card",
+    processingFee: "2.9",
+    isDefault: true,
+    isEnabled: true,
+    dateAdded: "2023-01-15",
+  },
+  {
+    id: "pm-2",
+    name: "PayPal",
+    processingFee: "3.5",
+    isDefault: false,
+    isEnabled: true,
+    dateAdded: "2023-02-20",
+  },
+  {
+    id: "pm-3",
+    name: "Bank Transfer",
+    processingFee: "1.0",
+    isDefault: false,
+    isEnabled: true,
+    dateAdded: "2023-03-10",
+  },
+];
+
 const AdminPayments = () => {
+  // State for payments and payment methods
+  const [payments, setPayments] = useState<Payment[]>(
+    safeGetItem('admin_payments', INITIAL_PAYMENTS_DATA)
+  );
+  
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(
+    safeGetItem('admin_payment_methods', INITIAL_PAYMENT_METHODS)
+  );
+  
   const [searchQuery, setSearchQuery] = useState("");
   
-  const filteredPayments = PAYMENTS_DATA.filter(
+  // Modal states
+  const [addPaymentMethodOpen, setAddPaymentMethodOpen] = useState(false);
+  const [viewPaymentOpen, setViewPaymentOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  
+  // Calculate summary stats
+  const totalRevenue = payments
+    .filter(p => p.status === "Completed")
+    .reduce((sum, p) => sum + p.amount, 0);
+    
+  const pendingPayments = payments
+    .filter(p => p.status === "Pending")
+    .reduce((sum, p) => sum + p.amount, 0);
+    
+  const failedPayments = payments
+    .filter(p => p.status === "Failed")
+    .reduce((sum, p) => sum + p.amount, 0);
+  
+  // Filter payments based on search query
+  const filteredPayments = payments.filter(
     (payment) =>
       payment.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.customer.toLowerCase().includes(searchQuery.toLowerCase())
+      payment.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.method.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Handlers for payment operations
+  const handleAddPaymentMethod = (data: any) => {
+    // If new method is set as default, update all others
+    let updatedMethods = [...paymentMethods];
+    
+    if (data.isDefault) {
+      updatedMethods = updatedMethods.map(method => ({
+        ...method,
+        isDefault: false,
+      }));
+    }
+    
+    const newMethod: PaymentMethod = {
+      id: uuidv4(),
+      name: data.name,
+      processingFee: data.processingFee,
+      isDefault: data.isDefault,
+      isEnabled: data.isEnabled,
+      dateAdded: new Date().toISOString().split('T')[0],
+    };
+    
+    const newMethods = [...updatedMethods, newMethod];
+    setPaymentMethods(newMethods);
+    safeSetItem('admin_payment_methods', newMethods);
+  };
+
+  const handleViewPayment = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setViewPaymentOpen(true);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Payment Management</h2>
-        <Button>
+        <Button onClick={() => setAddPaymentMethodOpen(true)}>
           <CreditCard className="mr-2 h-4 w-4" />
           Add Payment Method
         </Button>
@@ -81,7 +194,7 @@ const AdminPayments = () => {
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$48,294.00</div>
+            <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
         
@@ -90,7 +203,7 @@ const AdminPayments = () => {
             <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$1,200.00</div>
+            <div className="text-2xl font-bold">${pendingPayments.toFixed(2)}</div>
           </CardContent>
         </Card>
         
@@ -99,7 +212,7 @@ const AdminPayments = () => {
             <CardTitle className="text-sm font-medium">Failed Payments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$350.00</div>
+            <div className="text-2xl font-bold">${failedPayments.toFixed(2)}</div>
           </CardContent>
         </Card>
       </div>
@@ -150,7 +263,11 @@ const AdminPayments = () => {
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleViewPayment(payment)}
+                  >
                     View
                   </Button>
                 </TableCell>
@@ -159,6 +276,19 @@ const AdminPayments = () => {
           </TableBody>
         </Table>
       </div>
+      
+      {/* Modals */}
+      <AddPaymentMethodModal 
+        open={addPaymentMethodOpen} 
+        onOpenChange={setAddPaymentMethodOpen} 
+        onAddPaymentMethod={handleAddPaymentMethod} 
+      />
+      
+      <PaymentDetailsModal 
+        open={viewPaymentOpen} 
+        onOpenChange={setViewPaymentOpen} 
+        payment={selectedPayment} 
+      />
     </div>
   );
 };

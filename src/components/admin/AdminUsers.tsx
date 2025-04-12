@@ -19,8 +19,26 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Search, UserPlus } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
+import { safeGetItem, safeSetItem } from "@/utils/storage";
+import AddUserModal from "./AddUserModal";
+import UserDetailsModal from "./UserDetailsModal";
+import EditUserModal from "./EditUserModal";
+import DeleteUserDialog from "./DeleteUserDialog";
+import { toast } from "sonner";
 
-const USERS_DATA = [
+// Define User type
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  joinedDate: string;
+}
+
+// Initial data
+const INITIAL_USERS_DATA: User[] = [
   {
     id: "1",
     name: "John Davis",
@@ -64,20 +82,81 @@ const USERS_DATA = [
 ];
 
 const AdminUsers = () => {
+  // State for users data
+  const [users, setUsers] = useState<User[]>(
+    safeGetItem('admin_users', INITIAL_USERS_DATA)
+  );
+  
   const [searchQuery, setSearchQuery] = useState("");
   
-  const filteredUsers = USERS_DATA.filter(
+  // Modal states
+  const [addUserOpen, setAddUserOpen] = useState(false);
+  const [viewUserOpen, setViewUserOpen] = useState(false);
+  const [editUserOpen, setEditUserOpen] = useState(false);
+  const [deleteUserOpen, setDeleteUserOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  
+  // Filter users based on search query
+  const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Handlers for user operations
+  const handleAddUser = (userData: any) => {
+    const newUser = {
+      id: uuidv4(),
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      status: userData.status,
+      joinedDate: new Date().toISOString().split('T')[0],
+    };
+    
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    safeSetItem('admin_users', updatedUsers);
+  };
+
+  const handleViewUser = (user: User) => {
+    setSelectedUser(user);
+    setViewUserOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setEditUserOpen(true);
+  };
+
+  const handleUpdateUser = (id: string, userData: any) => {
+    const updatedUsers = users.map(user => 
+      user.id === id ? { ...user, ...userData } : user
+    );
+    setUsers(updatedUsers);
+    safeSetItem('admin_users', updatedUsers);
+  };
+
+  const handleDeleteUserConfirm = (user: User) => {
+    setSelectedUser(user);
+    setDeleteUserOpen(true);
+  };
+
+  const handleDeleteUser = () => {
+    if (selectedUser) {
+      const updatedUsers = users.filter(user => user.id !== selectedUser.id);
+      setUsers(updatedUsers);
+      safeSetItem('admin_users', updatedUsers);
+      setDeleteUserOpen(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Users Management</h2>
-        <Button>
+        <Button onClick={() => setAddUserOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
           Add User
         </Button>
@@ -145,10 +224,17 @@ const AdminUsers = () => {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem>View profile</DropdownMenuItem>
-                      <DropdownMenuItem>Edit user</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleViewUser(user)}>
+                        View profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                        Edit user
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem 
+                        className="text-red-600"
+                        onClick={() => handleDeleteUserConfirm(user)}
+                      >
                         Delete user
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -159,6 +245,33 @@ const AdminUsers = () => {
           </TableBody>
         </Table>
       </div>
+      
+      {/* Modals */}
+      <AddUserModal 
+        open={addUserOpen} 
+        onOpenChange={setAddUserOpen} 
+        onAddUser={handleAddUser} 
+      />
+      
+      <UserDetailsModal 
+        open={viewUserOpen} 
+        onOpenChange={setViewUserOpen} 
+        user={selectedUser} 
+      />
+      
+      <EditUserModal 
+        open={editUserOpen} 
+        onOpenChange={setEditUserOpen} 
+        user={selectedUser} 
+        onUpdateUser={handleUpdateUser} 
+      />
+      
+      <DeleteUserDialog 
+        open={deleteUserOpen} 
+        onOpenChange={setDeleteUserOpen} 
+        onConfirm={handleDeleteUser} 
+        userName={selectedUser?.name || ""} 
+      />
     </div>
   );
 };
