@@ -27,7 +27,7 @@ const PageHeader = ({
 
   return (
     <div className="sticky top-0 z-10 bg-white w-full">
-      <div className="flex items-center justify-between p-4 max-w-screen-2xl mx-auto">
+      <div className="flex items-center justify-between p-4 w-full">
         <div className="flex items-center">
           {showBackButton && (
             <Button

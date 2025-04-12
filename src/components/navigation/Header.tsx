@@ -35,8 +35,8 @@ const Header = ({
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col bg-white border-b w-full">
-      <div className="flex justify-between items-center px-4 py-3 max-w-screen-2xl mx-auto w-full">
+    <div className="sticky top-0 z-50 w-full bg-white border-b">
+      <div className="flex justify-between items-center px-4 py-3 w-full">
         <h1 
           className="text-xl font-bold text-app-purple cursor-pointer" 
           onClick={() => navigate('/')}
@@ -123,6 +123,7 @@ const Header = ({
           />
         </div>
       </div>
+      <Separator />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 
-import { Home, Users, MessageSquare, Calendar, User, Settings } from 'lucide-react';
+import { Home, Users, MessageSquare, Calendar, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const BottomNav = () => {
@@ -11,7 +11,7 @@ const BottomNav = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t grid grid-cols-5 z-10">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t grid grid-cols-5 z-50">
       <button
         className={`p-3 flex flex-col items-center justify-center ${isActive('/') ? 'text-app-purple' : 'text-gray-500'}`}
         onClick={() => navigate('/')}

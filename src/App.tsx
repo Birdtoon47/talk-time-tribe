@@ -12,10 +12,30 @@ import Reviews from "./pages/Reviews";
 import Creators from "./pages/Creators";
 import CreatorProfile from "./pages/CreatorProfile";
 import AdminDashboard from "./pages/AdminDashboard";
+import Header from "./components/navigation/Header";
 
 const queryClient = new QueryClient();
 
 const App = () => {
+  // Load user data
+  const [userData, setUserData] = useState<any>(null);
+  const [creators, setCreators] = useState<any[]>([]);
+  
+  useEffect(() => {
+    // Load user data from localStorage
+    const storedUser = localStorage.getItem('talktribe_user');
+    if (storedUser) {
+      setUserData(JSON.parse(storedUser));
+    }
+    
+    // Load creators
+    const storedUsers = localStorage.getItem('talktribe_users');
+    if (storedUsers) {
+      const users = JSON.parse(storedUsers);
+      setCreators(users.filter((user: any) => user.isCreator));
+    }
+  }, []);
+
   // Listen for the custom 'notification-added' event
   useEffect(() => {
     const handleNotificationAdded = () => {
@@ -37,12 +57,42 @@ const App = () => {
     };
   }, []);
 
+  const handleLogout = () => {
+    // Handle logout logic here
+    localStorage.removeItem('talktribe_user');
+    setUserData(null);
+  };
+
+  const handleUpdateUserData = (updatedData: any) => {
+    setUserData(updatedData);
+    localStorage.setItem('talktribe_user', JSON.stringify(updatedData));
+  };
+
+  const handleSelectCreator = (creator: any) => {
+    sessionStorage.setItem('selected_creator', JSON.stringify(creator));
+  };
+
+  // Only show the header on specific pages
+  const showHeaderRoutes = ['/creators', '/reviews', '/creator-profile', '/bookings'];
+  const shouldShowHeader = () => {
+    return showHeaderRoutes.some(route => window.location.pathname === route);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          {shouldShowHeader() && userData && (
+            <Header 
+              userData={userData} 
+              creators={creators} 
+              onSelectCreator={handleSelectCreator}
+              onLogout={handleLogout}
+              onUpdateUserData={handleUpdateUserData}
+            />
+          )}
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/checkout" element={<Checkout />} />
