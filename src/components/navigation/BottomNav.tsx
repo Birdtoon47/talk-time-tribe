@@ -1,5 +1,5 @@
 
-import { Home, Users, MessageSquare, Calendar, User } from 'lucide-react';
+import { Home, Users, MessageSquare, Calendar, User, Settings } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const BottomNav = () => {

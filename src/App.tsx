@@ -11,6 +11,7 @@ import Checkout from "./pages/Checkout";
 import Reviews from "./pages/Reviews";
 import Creators from "./pages/Creators";
 import CreatorProfile from "./pages/CreatorProfile";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => {
             <Route path="/creators" element={<Creators />} />
             <Route path="/creator-profile" element={<CreatorProfile />} />
             <Route path="/bookings" element={<Index />} /> {/* Redirect to Index since we're integrating it */}
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Users, Calendar, User } from 'lucide-react';
+import { Users, Calendar, User, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SearchBar from '@/components/SearchBar';
 import NotificationsDropdown from '@/components/NotificationsDropdown';
@@ -35,8 +35,8 @@ const Header = ({
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col bg-white border-b">
-      <div className="flex justify-between items-center px-4 py-3">
+    <div className="flex flex-col bg-white border-b w-full">
+      <div className="flex justify-between items-center px-4 py-3 max-w-screen-2xl mx-auto w-full">
         <h1 
           className="text-xl font-bold text-app-purple cursor-pointer" 
           onClick={() => navigate('/')}
@@ -88,6 +88,17 @@ const Header = ({
                       >
                         <User className="h-4 w-4" />
                         <span>My Profile</span>
+                      </NavigationMenuLink>
+                    </li>
+                    <li>
+                      <NavigationMenuLink
+                        className={cn(
+                          "flex items-center gap-2 p-2 hover:bg-slate-100 rounded-md w-full"
+                        )}
+                        onClick={() => navigate('/admin')}
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span>Admin Dashboard</span>
                       </NavigationMenuLink>
                     </li>
                   </ul>
